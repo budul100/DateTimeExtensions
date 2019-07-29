@@ -29,6 +29,16 @@ namespace Extensions
             return start.AddDays(daysToAdd);
         }
 
+        public static TimeSpan? TimeOfDay(this TimeSpan? value)
+        {
+            return !value.HasValue
+                ? default(TimeSpan?)
+                : new TimeSpan(
+                    hours: value.Value.Hours,
+                    minutes: value.Value.Minutes,
+                    seconds: value.Value.Seconds);
+        }
+
         public static string ToBitMask
             (this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
         {
