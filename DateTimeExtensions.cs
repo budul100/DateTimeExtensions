@@ -10,12 +10,47 @@ namespace Extensions
     {
         #region Private Fields
 
+        private const char NegativeBit = '0';
+        private const char PositiveBit = '1';
+
         private const string TimeStringPattern =
             @"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*";
 
         #endregion Private Fields
 
         #region Public Methods
+
+        public static IEnumerable<int> GetBits(this string bitMask)
+        {
+            if (bitMask?.Any() ?? false)
+            {
+                var bits = bitMask.ToCharArray();
+
+                for (int i = 0; i < bits.Count(); i++)
+                {
+                    if (bits[i] == PositiveBit)
+                    {
+                        yield return i;
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<DateTime> GetDates(
+            this string bitMask, DateTime startDate, DateTime? endDate = null)
+        {
+            var bits = bitMask.GetBits();
+
+            foreach (var b in bits)
+            {
+                var result = startDate.AddDays(b);
+
+                if (result > (endDate ?? DateTime.MaxValue))
+                    yield break;
+
+                yield return startDate.AddDays(b);
+            }
+        }
 
         public static DateTime GetLastWeekday(this DateTime start, DayOfWeek day)
         {
@@ -68,7 +103,7 @@ namespace Extensions
 
             for (int i = 0; i < length; i++)
             {
-                var bit = bits.Contains(i) ? "1" : "0";
+                var bit = bits.Contains(i) ? PositiveBit : NegativeBit;
                 result.Append(bit);
             }
 
