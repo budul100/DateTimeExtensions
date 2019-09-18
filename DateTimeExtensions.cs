@@ -41,14 +41,25 @@ namespace Extensions
         {
             var bits = bitMask.GetBits();
 
-            foreach (var b in bits)
+            if (bits.Any())
             {
-                var result = startDate.AddDays(b);
+                var result = startDate;
 
-                if (result > (endDate ?? DateTime.MaxValue))
-                    yield break;
+                do
+                {
+                    foreach (var b in bits)
+                    {
+                        result = result.AddDays(b);
 
-                yield return startDate.AddDays(b);
+                        if (result > (endDate ?? DateTime.MaxValue))
+                            yield break;
+
+                        yield return result;
+                    }
+
+                    result = result.AddDays(bits.Count());
+                }
+                while (result <= (endDate ?? DateTime.MinValue));
             }
         }
 
