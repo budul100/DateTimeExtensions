@@ -13,8 +13,7 @@ namespace Extensions
         private const char NegativeBit = '0';
         private const char PositiveBit = '1';
 
-        private const string TimeStringPattern =
-            @"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*";
+        private static readonly Regex timespanPattern = new Regex(@"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*");
 
         #endregion Private Fields
 
@@ -39,17 +38,15 @@ namespace Extensions
         public static IEnumerable<DateTime> GetDates(
             this string bitMask, DateTime startDate, DateTime? endDate = null)
         {
-            var bits = bitMask.GetBits();
+            var bits = bitMask.GetBits().ToArray();
 
             if (bits.Any())
             {
-                var result = startDate;
-
                 do
                 {
                     foreach (var b in bits)
                     {
-                        result = result.AddDays(b);
+                        var result = startDate.AddDays(b);
 
                         if (result > (endDate ?? DateTime.MaxValue))
                             yield break;
@@ -57,9 +54,9 @@ namespace Extensions
                         yield return result;
                     }
 
-                    result = result.AddDays(bits.Count());
+                    startDate = startDate.AddDays(bits.Count());
                 }
-                while (result <= (endDate ?? DateTime.MinValue));
+                while (startDate <= (endDate ?? DateTime.MinValue));
             }
         }
 
@@ -153,12 +150,6 @@ namespace Extensions
         }
 
         public static TimeSpan? ToTimeSpan
-            (this DateTime input)
-        {
-            return input.TimeOfDay;
-        }
-
-        public static TimeSpan? ToTimeSpan
             (this string input)
         {
             var result = default(TimeSpan?);
@@ -179,14 +170,6 @@ namespace Extensions
             }
 
             return result;
-        }
-
-        public static TimeSpan? ToTimeSpanUTC
-            (this DateTime input)
-        {
-            return DateTime.Now.Date
-                .AddTicks(input.Ticks).ToUniversalTime()
-                .Subtract(DateTime.Now.Date);
         }
 
         public static string ToTimeString
@@ -217,30 +200,26 @@ namespace Extensions
 
             if (!string.IsNullOrWhiteSpace(input))
             {
-                var regex = new Regex(
-                    pattern: TimeStringPattern,
-                    options: RegexOptions.IgnoreCase);
-
-                if (regex.Match(input).Groups["h"].Success
-                    && regex.Match(input).Groups["m"].Success)
+                if (timespanPattern.Match(input).Groups["h"].Success
+                    && timespanPattern.Match(input).Groups["m"].Success)
                 {
                     var days = 0;
 
-                    if (regex.Match(input).Groups["d1"].Success)
+                    if (timespanPattern.Match(input).Groups["d1"].Success)
                     {
-                        days = int.Parse(regex.Match(input).Groups["d1"].Value);
+                        days = int.Parse(timespanPattern.Match(input).Groups["d1"].Value);
                     }
-                    else if (regex.Match(input).Groups["d2"].Success)
+                    else if (timespanPattern.Match(input).Groups["d2"].Success)
                     {
-                        days = int.Parse(regex.Match(input).Groups["d2"].Value);
+                        days = int.Parse(timespanPattern.Match(input).Groups["d2"].Value);
                     }
 
-                    var hours = int.Parse(regex.Match(input).Groups["h"].Value);
+                    var hours = int.Parse(timespanPattern.Match(input).Groups["h"].Value);
 
-                    var minutes = int.Parse(regex.Match(input).Groups["m"].Value);
+                    var minutes = int.Parse(timespanPattern.Match(input).Groups["m"].Value);
 
-                    var seconds = regex.Match(input).Groups["s"].Success
-                        ? int.Parse(regex.Match(input).Groups["s"].Value)
+                    var seconds = timespanPattern.Match(input).Groups["s"].Success
+                        ? int.Parse(timespanPattern.Match(input).Groups["s"].Value)
                         : 0;
 
                     result = new TimeSpan(
