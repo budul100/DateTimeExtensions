@@ -54,7 +54,7 @@ namespace Extensions
                         yield return result;
                     }
 
-                    startDate = startDate.AddDays(bits.Count());
+                    startDate = startDate.AddDays(bitMask.Length);
                 }
                 while (startDate <= (endDate ?? DateTime.MinValue));
             }
