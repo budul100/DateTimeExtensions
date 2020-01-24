@@ -13,11 +13,25 @@ namespace Extensions
         private const char NegativeBit = '0';
         private const char PositiveBit = '1';
 
-        private static readonly Regex timespanPattern = new Regex(@"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*");
+        private static readonly Regex timespanPattern =
+            new Regex(@"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*");
 
         #endregion Private Fields
 
         #region Public Methods
+
+        public static TimeSpan? GetAbsoluteSpan(this TimeSpan? from, TimeSpan? to)
+        {
+            var result = default(TimeSpan?);
+
+            if (from.HasValue && to.HasValue)
+            {
+                var ticks = Math.Abs(to.Value.Subtract(from.Value).Ticks);
+                result = new TimeSpan(ticks);
+            }
+
+            return result;
+        }
 
         public static IEnumerable<int> GetBits(this string bitMask)
         {
@@ -35,8 +49,7 @@ namespace Extensions
             }
         }
 
-        public static IEnumerable<DateTime> GetDates(
-            this string bitMask, DateTime startDate, DateTime? endDate = null)
+        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime? endDate = null)
         {
             var bits = bitMask.GetBits().ToArray();
 
@@ -72,6 +85,21 @@ namespace Extensions
             return start.AddDays(daysToAdd);
         }
 
+        public static TimeSpan? GetPart(this TimeSpan? fullDuration, decimal? partLength, decimal? fullLength)
+        {
+            var result = default(TimeSpan?);
+
+            if ((fullDuration?.Ticks ?? 0) > 0
+                && (partLength ?? 0) > 0
+                && (fullLength ?? 0) > 0)
+            {
+                var partTicks = fullDuration.Value.Ticks * ((double)partLength / (double)fullLength);
+                result = new TimeSpan((long)partTicks);
+            }
+
+            return result;
+        }
+
         public static TimeSpan? TimeOfDay(this TimeSpan? value)
         {
             return !value.HasValue
@@ -82,8 +110,7 @@ namespace Extensions
                     seconds: value.Value.Seconds);
         }
 
-        public static string ToBitMask
-            (this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
+        public static string ToBitMask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
         {
             var result = new StringBuilder();
 
@@ -96,16 +123,14 @@ namespace Extensions
             return result.ToString();
         }
 
-        public static string ToBitMask
-            (this IEnumerable<DateTime> dates)
+        public static string ToBitMask(this IEnumerable<DateTime> dates)
         {
             return dates.ToBitMask(
                 begin: dates.Min(),
                 end: dates.Max());
         }
 
-        public static string ToBitMask
-            (this IEnumerable<int> bits, int length)
+        public static string ToBitMask(this IEnumerable<int> bits, int length)
         {
             var result = new StringBuilder();
 
@@ -135,8 +160,7 @@ namespace Extensions
             return result;
         }
 
-        public static string ToDateString
-            (this DateTime? value, string format = @"yyyy-MM-dd")
+        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd")
         {
             return value?.ToString(format);
         }
@@ -149,8 +173,7 @@ namespace Extensions
                 format: format);
         }
 
-        public static TimeSpan? ToTimeSpan
-            (this string input)
+        public static TimeSpan? ToTimeSpan(this string input)
         {
             var result = default(TimeSpan?);
 
@@ -172,8 +195,7 @@ namespace Extensions
             return result;
         }
 
-        public static string ToTimeString
-            (this TimeSpan? value, string format = @"hh\:mm\:ss")
+        public static string ToTimeString(this TimeSpan? value, string format = @"hh\:mm\:ss")
         {
             var result = value.HasValue
                 ? (value?.Ticks < 0 ? "-" : null) + value?.ToString(format)
@@ -182,8 +204,7 @@ namespace Extensions
             return result;
         }
 
-        public static string ToTimeString
-            (this TimeSpan value, string format = @"hh\:mm\:ss")
+        public static string ToTimeString(this TimeSpan value, string format = @"hh\:mm\:ss")
         {
             return ToTimeString(
                 value: (TimeSpan?)value,
