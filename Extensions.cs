@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Extensions
+namespace DateTimeExtensions
 {
-    public static class DateTimeExtensions
+    public static class Extensions
     {
         #region Private Fields
 
@@ -20,7 +21,26 @@ namespace Extensions
 
         #region Public Methods
 
-        public static TimeSpan? GetAbsoluteSpan(this TimeSpan? from, TimeSpan? to)
+        public static TimeSpan? AddDays(this TimeSpan? time, int days)
+        {
+            return time?.AddDays(days)
+                ?? default(TimeSpan?);
+        }
+
+        public static TimeSpan AddDays(this TimeSpan time, int days)
+        {
+            var additionalDays = new TimeSpan(
+                days: days,
+                hours: 0,
+                minutes: 0,
+                seconds: 0);
+
+            var result = time.Add(additionalDays);
+
+            return result;
+        }
+
+        public static TimeSpan? GetAbsDuration(this TimeSpan? from, TimeSpan? to)
         {
             var result = default(TimeSpan?);
 
@@ -39,7 +59,7 @@ namespace Extensions
             {
                 var bits = bitMask.ToCharArray();
 
-                for (int i = 0; i < bits.Count(); i++)
+                for (int i = 0; i < bits.Length; i++)
                 {
                     if (bits[i] == PositiveBit)
                     {
@@ -51,7 +71,8 @@ namespace Extensions
 
         public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime? endDate = null)
         {
-            var bits = bitMask.GetBits().ToArray();
+            var bits = bitMask
+                .GetBits().ToArray();
 
             if (bits.Any())
             {
@@ -76,28 +97,15 @@ namespace Extensions
         public static DateTime GetLastWeekday(this DateTime start, DayOfWeek day)
         {
             var daysToAdd = ((int)day - (int)start.DayOfWeek - 7) % 7;
+
             return start.AddDays(daysToAdd);
         }
 
         public static DateTime GetNextWeekday(this DateTime start, DayOfWeek day)
         {
             var daysToAdd = ((int)day - (int)start.DayOfWeek) % 7;
+
             return start.AddDays(daysToAdd);
-        }
-
-        public static TimeSpan? GetPart(this TimeSpan? fullDuration, decimal? partLength, decimal? fullLength)
-        {
-            var result = default(TimeSpan?);
-
-            if ((fullDuration?.Ticks ?? 0) > 0
-                && (partLength ?? 0) > 0
-                && (fullLength ?? 0) > 0)
-            {
-                var partTicks = fullDuration.Value.Ticks * ((double)partLength / (double)fullLength);
-                result = new TimeSpan((long)partTicks);
-            }
-
-            return result;
         }
 
         public static TimeSpan? TimeOfDay(this TimeSpan? value)
@@ -165,8 +173,7 @@ namespace Extensions
             return value?.ToString(format);
         }
 
-        public static string ToDateString
-            (this DateTime value, string format = @"yyyy-MM-dd")
+        public static string ToDateString(this DateTime value, string format = @"yyyy-MM-dd")
         {
             return ToDateString(
                 value: (DateTime?)value,
@@ -228,20 +235,33 @@ namespace Extensions
 
                     if (timespanPattern.Match(input).Groups["d1"].Success)
                     {
-                        days = int.Parse(timespanPattern.Match(input).Groups["d1"].Value);
+                        days = int.Parse(
+                            s: timespanPattern.Match(input).Groups["d1"].Value,
+                            provider: CultureInfo.InvariantCulture);
                     }
                     else if (timespanPattern.Match(input).Groups["d2"].Success)
                     {
-                        days = int.Parse(timespanPattern.Match(input).Groups["d2"].Value);
+                        days = int.Parse(
+                            s: timespanPattern.Match(input).Groups["d2"].Value,
+                            provider: CultureInfo.InvariantCulture);
                     }
 
-                    var hours = int.Parse(timespanPattern.Match(input).Groups["h"].Value);
+                    var hours = int.Parse(
+                        s: timespanPattern.Match(input).Groups["h"].Value,
+                        provider: CultureInfo.InvariantCulture);
 
-                    var minutes = int.Parse(timespanPattern.Match(input).Groups["m"].Value);
+                    var minutes = int.Parse(
+                        s: timespanPattern.Match(input).Groups["m"].Value,
+                        provider: CultureInfo.InvariantCulture);
 
-                    var seconds = timespanPattern.Match(input).Groups["s"].Success
-                        ? int.Parse(timespanPattern.Match(input).Groups["s"].Value)
-                        : 0;
+                    var seconds = 0;
+
+                    if (timespanPattern.Match(input).Groups["s"].Success)
+                    {
+                        seconds = int.Parse(
+                            s: timespanPattern.Match(input).Groups["s"].Value,
+                            provider: CultureInfo.InvariantCulture);
+                    }
 
                     result = new TimeSpan(
                         days: days,
