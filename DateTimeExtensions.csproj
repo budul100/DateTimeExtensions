@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <AssemblyName>DateTimeExtensions</AssemblyName>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
     <Version>$(AssemblyVersion)</Version>
@@ -12,7 +13,6 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageTags>Date conversion,Time conversion,Date handling,Time handling,Duration calculation</PackageTags>
     <Description>Multiple extension methods to handle and calculate date and time based data</Description>
-    <AssemblyName>DateTimeExtensions</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
