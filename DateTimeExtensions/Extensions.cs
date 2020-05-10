@@ -155,10 +155,10 @@ namespace DateTimeExtensions
 
         public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime? endDate = null)
         {
-            var bits = bitMask
+            var bits = bitMask?
                 .GetBits().ToArray();
 
-            if (bits.Any())
+            if (bits?.Any() ?? false)
             {
                 do
                 {
@@ -190,6 +190,27 @@ namespace DateTimeExtensions
             var daysToAdd = ((int)day - (int)start.DayOfWeek) % 7;
 
             return start.AddDays(daysToAdd);
+        }
+
+        public static IEnumerable<DateTime> GetShifted(this IEnumerable<DateTime> dates, int shift)
+        {
+            if (dates?.Any() ?? false)
+            {
+                foreach (var date in dates)
+                {
+                    yield return date.GetShifted(shift);
+                }
+            }
+        }
+
+        public static DateTime GetShifted(this DateTime date, int shift)
+        {
+            return date.AddDays(shift);
+        }
+
+        public static DateTime? GetShifted(this DateTime? date, int shift)
+        {
+            return date?.GetShifted(shift);
         }
 
         public static TimeSpan? TimeOfDay(this TimeSpan? value)
@@ -252,9 +273,11 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd")
+        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd", CultureInfo provider = default)
         {
-            return value?.ToString(format);
+            return value?.ToString(
+                format: format,
+                provider: provider ?? CultureInfo.InvariantCulture);
         }
 
         public static string ToDateString(this DateTime value, string format = @"yyyy-MM-dd")
@@ -271,10 +294,13 @@ namespace DateTimeExtensions
             if (!string.IsNullOrWhiteSpace(input))
             {
                 if (double.TryParse(input, out double resultValue)
-                    && resultValue.ToString() == input.Trim())
+                    && resultValue.ToString(CultureInfo.InvariantCulture) == input.Trim())
                 {
-                    result =
-                        DateTime.FromOADate(Convert.ToDouble(input)) -
+                    var current = Convert.ToDouble(
+                        value: input,
+                        provider: CultureInfo.InvariantCulture);
+
+                    result = DateTime.FromOADate(current) -
                         DateTime.FromOADate(0);
                 }
                 else
@@ -288,9 +314,11 @@ namespace DateTimeExtensions
 
         public static string ToTimeString(this TimeSpan? value, string format = @"hh\:mm\:ss")
         {
-            var result = value.HasValue
-                ? (value?.Ticks < 0 ? "-" : null) + value?.ToString(format)
-                : null;
+            var result = !value.HasValue
+                ? default
+                : (value?.Ticks < 0 ? "-" : default) + value?.ToString(
+                    format: format,
+                    formatProvider: CultureInfo.InvariantCulture);
 
             return result;
         }
