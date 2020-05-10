@@ -1,13 +1,16 @@
+using DateTimeExtensions;
 using NUnit.Framework;
 using System;
-using DateTimeExtensions;
+using System.Linq;
 
 namespace DateTimeExtensionsTests
 {
     public class Tests
     {
+        #region Public Methods
+
         [Test]
-        public void MultiDayCycleDates()
+        public void CycleDatesMultiDay()
         {
             var cycle = new DateTime[] { new DateTime(2020, 1, 10), new DateTime(2020, 1, 16) };
 
@@ -28,9 +31,25 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
-        public void SingleDayCycleDates()
+        public void ShiftedDates()
         {
-            var cycle = new DateTime[] { new DateTime(2020, 1, 10)};
+            var givens = new DateTime[] { new DateTime(2020, 1, 10), new DateTime(2020, 1, 16) };
+
+            var backs = givens.GetShifted(-1);
+
+            Assert.True(backs.First() == new DateTime(2020, 1, 9));
+            Assert.True(backs.Last() == new DateTime(2020, 1, 15));
+
+            var ons = givens.GetShifted(1);
+
+            Assert.True(ons.First() == new DateTime(2020, 1, 11));
+            Assert.True(ons.Last() == new DateTime(2020, 1, 17));
+        }
+
+        [Test]
+        public void CycleDatesSingleDay()
+        {
+            var cycle = new DateTime[] { new DateTime(2020, 1, 10) };
 
             var outCycle = new DateTime(2020, 1, 12).GetCyclic(cycle);
             Assert.True(outCycle == new DateTime(2020, 1, 10));
@@ -38,5 +57,7 @@ namespace DateTimeExtensionsTests
             var inCycle = new DateTime(2020, 1, 10).GetCyclic(cycle);
             Assert.True(inCycle == new DateTime(2020, 1, 10));
         }
+
+        #endregion Public Methods
     }
 }
