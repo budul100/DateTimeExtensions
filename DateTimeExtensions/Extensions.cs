@@ -216,12 +216,17 @@ namespace DateTimeExtensions
 
         public static TimeSpan? TimeOfDay(this TimeSpan? value)
         {
-            return !value.HasValue
-                ? default(TimeSpan?)
-                : new TimeSpan(
+            var result = default(TimeSpan?);
+
+            if (value.HasValue)
+            {
+                result = new TimeSpan(
                     hours: value.Value.Hours,
                     minutes: value.Value.Minutes,
                     seconds: value.Value.Seconds);
+            }
+
+            return result;
         }
 
         public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
@@ -274,18 +279,6 @@ namespace DateTimeExtensions
             return bits.ToBitmask(bits.Max());
         }
 
-        public static DateTime? ToDate(this string date)
-        {
-            var result = default(DateTime?);
-
-            if (DateTime.TryParse(date, out DateTime newDate))
-            {
-                result = newDate;
-            }
-
-            return result;
-        }
-
         public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd",
             CultureInfo provider = default)
         {
@@ -299,6 +292,37 @@ namespace DateTimeExtensions
             return ToDateString(
                 value: (DateTime?)value,
                 format: format);
+        }
+
+        public static DateTime ToDateTime(this TimeSpan time)
+        {
+            var result = new DateTime(time.Ticks);
+
+            return result;
+        }
+
+        public static DateTime? ToDateTime(this TimeSpan? time)
+        {
+            var result = default(DateTime?);
+
+            if (time.HasValue)
+            {
+                result = time.Value.ToDateTime();
+            }
+
+            return result;
+        }
+
+        public static DateTime? ToDateTime(this string date)
+        {
+            var result = default(DateTime?);
+
+            if (DateTime.TryParse(date, out DateTime newDate))
+            {
+                result = newDate;
+            }
+
+            return result;
         }
 
         public static TimeSpan? ToTimeSpan(this string input)
