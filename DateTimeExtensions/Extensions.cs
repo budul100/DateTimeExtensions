@@ -153,7 +153,8 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime? endDate = null)
+        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate,
+            DateTime? endDate = default)
         {
             var bits = bitMask?
                 .GetBits().ToArray();
@@ -162,9 +163,9 @@ namespace DateTimeExtensions
             {
                 do
                 {
-                    foreach (var b in bits)
+                    foreach (var bit in bits)
                     {
-                        var result = startDate.AddDays(b);
+                        var result = startDate.AddDays(bit);
 
                         if (result > (endDate ?? DateTime.MaxValue))
                             yield break;
@@ -223,42 +224,54 @@ namespace DateTimeExtensions
                     seconds: value.Value.Seconds);
         }
 
-        public static string ToBitMask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
+        public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
         {
             var result = new StringBuilder();
 
-            for (DateTime d = begin; d <= end; d = d.AddDays(1))
+            if (dates?.Any() ?? false)
             {
-                var bit = dates.Contains(d) ? "1" : "0";
-                result.Append(bit);
+                for (var date = begin; date <= end; date = date.AddDays(1))
+                {
+                    var bit = dates.Contains(date)
+                        ? PositiveBit
+                        : NegativeBit;
+
+                    result.Append(bit);
+                }
             }
 
             return result.ToString();
         }
 
-        public static string ToBitMask(this IEnumerable<DateTime> dates)
+        public static string ToBitmask(this IEnumerable<DateTime> dates)
         {
-            return dates.ToBitMask(
+            return dates.ToBitmask(
                 begin: dates.Min(),
                 end: dates.Max());
         }
 
-        public static string ToBitMask(this IEnumerable<int> bits, int length)
+        public static string ToBitmask(this IEnumerable<int> numbers, int length)
         {
             var result = new StringBuilder();
 
-            for (int i = 0; i < length; i++)
+            if (numbers?.Any() ?? false)
             {
-                var bit = bits.Contains(i) ? PositiveBit : NegativeBit;
-                result.Append(bit);
+                for (var number = 0; number < length; number++)
+                {
+                    var bit = numbers.Contains(number)
+                        ? PositiveBit
+                        : NegativeBit;
+
+                    result.Append(bit);
+                }
             }
 
             return result.ToString();
         }
 
-        public static string ToBitMask(this IEnumerable<int> bits)
+        public static string ToBitmask(this IEnumerable<int> bits)
         {
-            return bits.ToBitMask(bits.Max());
+            return bits.ToBitmask(bits.Max());
         }
 
         public static DateTime? ToDate(this string date)
@@ -273,7 +286,8 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd", CultureInfo provider = default)
+        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd",
+            CultureInfo provider = default)
         {
             return value?.ToString(
                 format: format,
