@@ -9,10 +9,18 @@ namespace DateTimeExtensions
 {
     public static class Extensions
     {
+        #region Public Fields
+
+        public const string FromToDatesSeparator = ">";
+
+        #endregion Public Fields
+
         #region Private Fields
 
         private const char NegativeBit = '0';
         private const char PositiveBit = '1';
+
+        private static readonly string[] fromToDatesSeparators = new string[] { FromToDatesSeparator };
 
         private static readonly Regex timespanPattern =
             new Regex(@"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*");
@@ -177,6 +185,28 @@ namespace DateTimeExtensions
                 }
                 while (startDate <= (endDate ?? DateTime.MinValue));
             }
+        }
+
+        public static IEnumerable<DateTime> GetDates(this string dates, string separator = ",")
+        {
+            if (separator?.Contains(FromToDatesSeparator) ?? false)
+            {
+                throw new ArgumentException(
+                    paramName: nameof(separator),
+                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' since " +
+                    $"it is used to split from and to values of periods.");
+            }
+
+            var sectionSeparators = new string[] { separator };
+
+            var sections = dates.Split(
+                separator: sectionSeparators,
+                options: StringSplitOptions.RemoveEmptyEntries);
+
+            var result = sections.GetDates()
+                .OrderBy(d => d).ToArray();
+
+            return result;
         }
 
         public static DateTime GetLastWeekday(this DateTime start, DayOfWeek day)
@@ -371,6 +401,30 @@ namespace DateTimeExtensions
         #endregion Public Methods
 
         #region Private Methods
+
+        private static IEnumerable<DateTime> GetDates(this IEnumerable<string> sections)
+        {
+            foreach (var section in sections)
+            {
+                var currents = section.Split(
+                    separator: fromToDatesSeparators,
+                    options: StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.ToDateTime())
+                    .Where(d => d.HasValue)
+                    .OrderBy(d => d).ToArray();
+
+                if (currents?.Any() ?? false)
+                {
+                    var from = currents.First().Value;
+                    var to = currents.Last().Value;
+
+                    for (var date = from; date <= to; date = date.AddDays(1))
+                    {
+                        yield return date;
+                    }
+                }
+            }
+        }
 
         private static TimeSpan? ParseTime(this string input)
         {

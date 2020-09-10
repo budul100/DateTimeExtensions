@@ -31,6 +31,46 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void CycleDatesSingleDay()
+        {
+            var cycle = new DateTime[] { new DateTime(2020, 1, 10) };
+
+            var outCycle = new DateTime(2020, 1, 12).GetCyclic(cycle);
+            Assert.True(outCycle == new DateTime(2020, 1, 10));
+
+            var inCycle = new DateTime(2020, 1, 10).GetCyclic(cycle);
+            Assert.True(inCycle == new DateTime(2020, 1, 10));
+        }
+
+        [Test]
+        public void GetMultipleDatesFromString()
+        {
+            var test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
+
+            var dates = test.GetDates();
+
+            Assert.IsTrue(dates.Count() == 5);
+        }
+
+        [Test]
+        public void GetMultipleDatesWithFromToSeparator()
+        {
+            var test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
+
+            Assert.Throws<ArgumentException>(() => test.GetDates(">"));
+        }
+
+        [Test]
+        public void GetMultipleDatesWithOtherSeparator()
+        {
+            var test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
+
+            var dates = test.GetDates(";");
+
+            Assert.IsTrue(dates.Count() == 5);
+        }
+
+        [Test]
         public void ShiftedDates()
         {
             var givens = new DateTime[] { new DateTime(2020, 1, 10), new DateTime(2020, 1, 16) };
@@ -44,18 +84,6 @@ namespace DateTimeExtensionsTests
 
             Assert.True(ons.First() == new DateTime(2020, 1, 11));
             Assert.True(ons.Last() == new DateTime(2020, 1, 17));
-        }
-
-        [Test]
-        public void CycleDatesSingleDay()
-        {
-            var cycle = new DateTime[] { new DateTime(2020, 1, 10) };
-
-            var outCycle = new DateTime(2020, 1, 12).GetCyclic(cycle);
-            Assert.True(outCycle == new DateTime(2020, 1, 10));
-
-            var inCycle = new DateTime(2020, 1, 10).GetCyclic(cycle);
-            Assert.True(inCycle == new DateTime(2020, 1, 10));
         }
 
         #endregion Public Methods
