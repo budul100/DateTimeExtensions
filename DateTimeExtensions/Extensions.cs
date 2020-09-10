@@ -197,16 +197,21 @@ namespace DateTimeExtensions
                     $"it is used to split from and to values of periods.");
             }
 
-            var sectionSeparators = new string[] { separator };
+            var result = default(IEnumerable<DateTime>);
 
-            var sections = dates.Split(
-                separator: sectionSeparators,
-                options: StringSplitOptions.RemoveEmptyEntries);
+            if (!string.IsNullOrWhiteSpace(dates))
+            {
+                var sectionSeparators = new string[] { separator };
 
-            var result = sections.GetDates()
-                .OrderBy(d => d).ToArray();
+                var sections = dates.Split(
+                    separator: sectionSeparators,
+                    options: StringSplitOptions.RemoveEmptyEntries);
 
-            return result;
+                result = sections.GetDates()
+                    .OrderBy(d => d).ToArray();
+            }
+
+            return result ?? Enumerable.Empty<DateTime>(); ;
         }
 
         public static DateTime GetLastWeekday(this DateTime start, DayOfWeek day)

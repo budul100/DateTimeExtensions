@@ -43,6 +43,26 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void GetMultipleDatesFromEmpty()
+        {
+            var test = "  ";
+
+            var dates = test.GetDates();
+
+            Assert.IsTrue(dates.Count() == 0);
+        }
+
+        [Test]
+        public void GetMultipleDatesFromfalse()
+        {
+            var test = "2020-02-31,2020-02-32";
+
+            var dates = test.GetDates();
+
+            Assert.IsTrue(dates.Count() == 0);
+        }
+
+        [Test]
         public void GetMultipleDatesFromString()
         {
             var test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
