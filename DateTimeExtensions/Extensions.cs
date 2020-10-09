@@ -161,29 +161,33 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate,
-            DateTime? endDate = default)
+        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime endDate = default)
         {
             var bits = bitMask?
                 .GetBits().ToArray();
 
             if (bits?.Any() ?? false)
             {
+                if (endDate == default && startDate != default)
+                {
+                    endDate = startDate.AddDays(bits.Length - 1);
+                }
+
                 do
                 {
                     foreach (var bit in bits)
                     {
                         var result = startDate.AddDays(bit);
 
-                        if (result > (endDate ?? DateTime.MaxValue))
+                        if (result > endDate)
                             yield break;
 
-                        yield return result;
+                        yield return result.Date;
                     }
 
                     startDate = startDate.AddDays(bitMask.Length);
                 }
-                while (startDate <= (endDate ?? DateTime.MinValue));
+                while (startDate <= endDate);
             }
         }
 
@@ -314,19 +318,18 @@ namespace DateTimeExtensions
             return bits.ToBitmask(bits.Max());
         }
 
-        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd",
-            CultureInfo provider = default)
+        public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd", CultureInfo provider = default)
         {
-            return value?.ToString(
+            return value?.ToDateString(
                 format: format,
-                provider: provider ?? CultureInfo.InvariantCulture);
+                provider: provider);
         }
 
-        public static string ToDateString(this DateTime value, string format = @"yyyy-MM-dd")
+        public static string ToDateString(this DateTime value, string format = @"yyyy-MM-dd", CultureInfo provider = default)
         {
-            return ToDateString(
-                value: (DateTime?)value,
-                format: format);
+            return value.Date.ToString(
+                format: format,
+                provider: provider ?? CultureInfo.InvariantCulture);
         }
 
         public static DateTime ToDateTime(this TimeSpan time)
@@ -425,7 +428,7 @@ namespace DateTimeExtensions
 
                     for (var date = from; date <= to; date = date.AddDays(1))
                     {
-                        yield return date;
+                        yield return date.Date;
                     }
                 }
             }

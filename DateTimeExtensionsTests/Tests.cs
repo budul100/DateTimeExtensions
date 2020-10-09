@@ -43,13 +43,57 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void GetFromMultiBitmask()
+        {
+            var bits = "1000000";
+
+            var dates = bits.GetDates(DateTime.Now, DateTime.Now.AddDays(13)).ToArray();
+
+            Assert.IsTrue(dates.Count() == 2);
+        }
+
+        [Test]
+        public void GetFromMultiBitmaskWithoutEnd()
+        {
+            var bits = "1111111";
+
+            var dates = bits.GetDates(DateTime.Now).ToArray();
+
+            Assert.IsTrue(dates.Count() == 7);
+        }
+
+        [Test]
+        public void GetFromSingleBitmask()
+        {
+            var singleNoneBit = "0";
+
+            var startOnlyNone = singleNoneBit.GetDates(DateTime.Now).ToArray();
+
+            Assert.IsFalse(startOnlyNone.Any());
+
+            var startAndEmptyEndNone = singleNoneBit.GetDates(DateTime.Now, default).ToArray();
+
+            Assert.IsFalse(startAndEmptyEndNone.Any());
+
+            var singleBit = "1";
+
+            var startOnly = singleBit.GetDates(DateTime.Now);
+
+            Assert.IsTrue(startOnly.Single() == DateTime.Today);
+
+            var startAndEmptyEnd = singleBit.GetDates(DateTime.Now, default).ToArray();
+
+            Assert.IsTrue(startAndEmptyEnd.Single() == DateTime.Today);
+        }
+
+        [Test]
         public void GetMultipleDatesFromEmpty()
         {
             var test = "  ";
 
             var dates = test.GetDates();
 
-            Assert.IsTrue(dates.Count() == 0);
+            Assert.IsFalse(dates.Any());
         }
 
         [Test]
@@ -59,7 +103,7 @@ namespace DateTimeExtensionsTests
 
             var dates = test.GetDates();
 
-            Assert.IsTrue(dates.Count() == 0);
+            Assert.IsFalse(dates.Any());
         }
 
         [Test]
