@@ -161,7 +161,7 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime endDate = default)
+        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime? endDate = default)
         {
             var bits = bitMask?
                 .GetBits().ToArray();
