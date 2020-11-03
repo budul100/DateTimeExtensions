@@ -268,7 +268,7 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end)
+        public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end, bool defaultOnEmpty = false)
         {
             var result = new StringBuilder();
 
@@ -284,17 +284,34 @@ namespace DateTimeExtensions
                 }
             }
 
-            return result.ToString();
+            return defaultOnEmpty && result.Length == 0
+                ? default
+                : result.ToString();
         }
 
-        public static string ToBitmask(this IEnumerable<DateTime> dates)
+        public static string ToBitmask(this IEnumerable<DateTime> dates, bool defaultOnEmpty = false)
         {
-            return dates.ToBitmask(
-                begin: dates.Min(),
-                end: dates.Max());
+            var result = default(string);
+
+            if (dates?.Any() ?? false)
+            {
+                result = dates?.ToBitmask(
+                    begin: dates?.Min() ?? DateTime.MinValue,
+                    end: dates?.Max() ?? DateTime.MinValue,
+                    defaultOnEmpty: defaultOnEmpty);
+            }
+
+            if (result == default)
+            {
+                result = defaultOnEmpty
+                    ? default
+                    : string.Empty;
+            }
+
+            return result;
         }
 
-        public static string ToBitmask(this IEnumerable<int> numbers, int length)
+        public static string ToBitmask(this IEnumerable<int> numbers, int length, bool defaultOnEmpty = false)
         {
             var result = new StringBuilder();
 
@@ -310,12 +327,30 @@ namespace DateTimeExtensions
                 }
             }
 
-            return result.ToString();
+            return defaultOnEmpty && result.Length == 0
+                ? default
+                : result.ToString();
         }
 
-        public static string ToBitmask(this IEnumerable<int> bits)
+        public static string ToBitmask(this IEnumerable<int> bits, bool defaultOnEmpty = false)
         {
-            return bits.ToBitmask(bits.Max());
+            var result = default(string);
+
+            if (bits?.Any() ?? false)
+            {
+                result = bits.ToBitmask(
+                    length: bits.Max(),
+                    defaultOnEmpty: defaultOnEmpty);
+            }
+
+            if (result == default)
+            {
+                result = defaultOnEmpty
+                    ? default
+                    : string.Empty;
+            }
+
+            return result;
         }
 
         public static string ToDateString(this DateTime? value, string format = @"yyyy-MM-dd", CultureInfo provider = default)
