@@ -159,6 +159,56 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void GetNext()
+        {
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Monday).DayOfWeek == DayOfWeek.Monday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Monday) >= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Tuesday).DayOfWeek == DayOfWeek.Tuesday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Tuesday) >= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Wednesday).DayOfWeek == DayOfWeek.Wednesday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Wednesday) >= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Thursday).DayOfWeek == DayOfWeek.Thursday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Thursday) >= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Friday).DayOfWeek == DayOfWeek.Friday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Friday) >= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Saturday).DayOfWeek == DayOfWeek.Saturday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Saturday) >= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Sunday).DayOfWeek == DayOfWeek.Sunday);
+            Assert.IsTrue(DateTime.Today.GetNext(DayOfWeek.Sunday) >= DateTime.Today);
+        }
+
+        [Test]
+        public void GetPrevious()
+        {
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Monday).DayOfWeek == DayOfWeek.Monday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Monday) <= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Tuesday).DayOfWeek == DayOfWeek.Tuesday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Tuesday) <= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Wednesday).DayOfWeek == DayOfWeek.Wednesday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Wednesday) <= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Thursday).DayOfWeek == DayOfWeek.Thursday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Thursday) <= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Friday).DayOfWeek == DayOfWeek.Friday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Friday) <= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Saturday).DayOfWeek == DayOfWeek.Saturday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Saturday) <= DateTime.Today);
+
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Sunday).DayOfWeek == DayOfWeek.Sunday);
+            Assert.IsTrue(DateTime.Today.GetPrevious(DayOfWeek.Sunday) <= DateTime.Today);
+        }
+
+        [Test]
         public void ShiftedDates()
         {
             var givens = new DateTime[] { new DateTime(2020, 1, 10), new DateTime(2020, 1, 16) };

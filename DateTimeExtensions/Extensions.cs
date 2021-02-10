@@ -218,16 +218,16 @@ namespace DateTimeExtensions
             return result ?? Enumerable.Empty<DateTime>(); ;
         }
 
-        public static DateTime GetLastWeekday(this DateTime start, DayOfWeek day)
+        public static DateTime GetNext(this DateTime start, DayOfWeek day)
         {
-            var daysToAdd = ((int)day - (int)start.DayOfWeek - 7) % 7;
+            var daysToAdd = ((int)day - (int)start.DayOfWeek + 7) % 7;
 
             return start.AddDays(daysToAdd);
         }
 
-        public static DateTime GetNextWeekday(this DateTime start, DayOfWeek day)
+        public static DateTime GetPrevious(this DateTime start, DayOfWeek day)
         {
-            var daysToAdd = ((int)day - (int)start.DayOfWeek) % 7;
+            var daysToAdd = ((int)day - (int)start.DayOfWeek - 7) % 7;
 
             return start.AddDays(daysToAdd);
         }
