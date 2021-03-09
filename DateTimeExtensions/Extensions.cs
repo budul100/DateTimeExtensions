@@ -170,7 +170,7 @@ namespace DateTimeExtensions
             {
                 if (endDate == default && startDate != default)
                 {
-                    endDate = startDate.AddDays(bits.Length - 1);
+                    endDate = startDate.AddDays(bits.Last());
                 }
 
                 do

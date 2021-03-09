@@ -10,6 +10,56 @@ namespace DateTimeExtensionsTests
         #region Public Methods
 
         [Test]
+        public void BitmaskSingleBit()
+        {
+            var singleNoneBit = "0";
+
+            var startOnlyNone = singleNoneBit.GetDates(DateTime.Now).ToArray();
+
+            Assert.IsFalse(startOnlyNone.Any());
+
+            var startAndEmptyEndNone = singleNoneBit.GetDates(DateTime.Now, default).ToArray();
+
+            Assert.IsFalse(startAndEmptyEndNone.Any());
+
+            var singleBit = "1";
+
+            var startOnly = singleBit.GetDates(DateTime.Now);
+
+            Assert.IsTrue(startOnly.Single() == DateTime.Today);
+
+            var startAndEmptyEnd = singleBit.GetDates(DateTime.Now, default).ToArray();
+
+            Assert.IsTrue(startAndEmptyEnd.Single() == DateTime.Today);
+        }
+
+        [Test]
+        public void BitmaskWithEnd()
+        {
+            var bits = "1000000";
+
+            var dates = bits.GetDates(DateTime.Now, DateTime.Now.AddDays(13)).ToArray();
+
+            Assert.IsTrue(dates.Count() == 2);
+        }
+
+        [Test]
+        public void BitmaskWithoutEnd()
+        {
+            var bits7 = "1111111";
+
+            var dates7 = bits7.GetDates(DateTime.Now, default).ToArray();
+
+            Assert.IsTrue(dates7.Count() == 7);
+
+            var bits1 = "0001000";
+
+            var dates1 = bits1.GetDates(DateTime.Now, default).ToArray();
+
+            Assert.IsTrue(dates1.Count() == 1);
+        }
+
+        [Test]
         public void CycleDatesMultiDay()
         {
             var cycle = new DateTime[] { new DateTime(2020, 1, 10), new DateTime(2020, 1, 16) };
@@ -55,59 +105,15 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetEmptyBitmask()
         {
-            var dates = new DateTime[] { };
+            var dates = Array.Empty<DateTime>();
 
             var resultWoDefault = dates.ToBitmask();
 
-            Assert.IsTrue(resultWoDefault == "");
+            Assert.IsTrue(string.IsNullOrEmpty(resultWoDefault));
 
             var resultWDefault = dates.ToBitmask(true);
 
             Assert.IsTrue(resultWDefault == default);
-        }
-
-        [Test]
-        public void GetFromMultiBitmask()
-        {
-            var bits = "1000000";
-
-            var dates = bits.GetDates(DateTime.Now, DateTime.Now.AddDays(13)).ToArray();
-
-            Assert.IsTrue(dates.Count() == 2);
-        }
-
-        [Test]
-        public void GetFromMultiBitmaskWithoutEnd()
-        {
-            var bits = "1111111";
-
-            var dates = bits.GetDates(DateTime.Now).ToArray();
-
-            Assert.IsTrue(dates.Count() == 7);
-        }
-
-        [Test]
-        public void GetFromSingleBitmask()
-        {
-            var singleNoneBit = "0";
-
-            var startOnlyNone = singleNoneBit.GetDates(DateTime.Now).ToArray();
-
-            Assert.IsFalse(startOnlyNone.Any());
-
-            var startAndEmptyEndNone = singleNoneBit.GetDates(DateTime.Now, default).ToArray();
-
-            Assert.IsFalse(startAndEmptyEndNone.Any());
-
-            var singleBit = "1";
-
-            var startOnly = singleBit.GetDates(DateTime.Now);
-
-            Assert.IsTrue(startOnly.Single() == DateTime.Today);
-
-            var startAndEmptyEnd = singleBit.GetDates(DateTime.Now, default).ToArray();
-
-            Assert.IsTrue(startAndEmptyEnd.Single() == DateTime.Today);
         }
 
         [Test]
