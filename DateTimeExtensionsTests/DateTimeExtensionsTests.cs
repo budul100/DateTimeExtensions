@@ -110,10 +110,12 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetDatesWithoutDaysOfWeek()
         {
+            var daysOfWeek = Array.Empty<DayOfWeek>();
+
             var from = DateTime.Now.AddDays(-5);
             var to = DateTime.Now.AddDays(5);
 
-            var result = from.GetDates(to).ToArray();
+            var result = from.GetDates(to, daysOfWeek).ToArray();
 
             Assert.True(result.Length == 11);
         }

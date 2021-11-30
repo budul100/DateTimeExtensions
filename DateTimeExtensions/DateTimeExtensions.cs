@@ -84,7 +84,7 @@ namespace DateTimeExtensions
 
             for (var date = start; date <= end; date = date.AddDays(1))
             {
-                if (daysOfWeek?.Contains(date.DayOfWeek) != false)
+                if (!(daysOfWeek?.Any() ?? false) || daysOfWeek.Contains(date.DayOfWeek))
                 {
                     yield return date;
                 }
