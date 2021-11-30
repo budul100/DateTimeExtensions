@@ -5,24 +5,24 @@ using System.Linq;
 
 namespace DateTimeExtensionsTests
 {
-    public class Tests
+    public class DateTimeExtensionsTests
     {
         #region Public Methods
 
         [Test]
         public void BitmaskSingleBit()
         {
-            var singleNoneBit = "0";
+            const string singleNoneBit = "0";
 
             var startOnlyNone = singleNoneBit.GetDates(DateTime.Now).ToArray();
 
-            Assert.IsFalse(startOnlyNone.Any());
+            Assert.IsFalse(startOnlyNone.Length > 0);
 
             var startAndEmptyEndNone = singleNoneBit.GetDates(DateTime.Now, default).ToArray();
 
-            Assert.IsFalse(startAndEmptyEndNone.Any());
+            Assert.IsFalse(startAndEmptyEndNone.Length > 0);
 
-            var singleBit = "1";
+            const string singleBit = "1";
 
             var startOnly = singleBit.GetDates(DateTime.Now);
 
@@ -36,27 +36,27 @@ namespace DateTimeExtensionsTests
         [Test]
         public void BitmaskWithEnd()
         {
-            var bits = "1000000";
+            const string bits = "1000000";
 
             var dates = bits.GetDates(DateTime.Now, DateTime.Now.AddDays(13)).ToArray();
 
-            Assert.IsTrue(dates.Count() == 2);
+            Assert.IsTrue(dates.Length == 2);
         }
 
         [Test]
         public void BitmaskWithoutEnd()
         {
-            var bits7 = "1111111";
+            const string bits7 = "1111111";
 
             var dates7 = bits7.GetDates(DateTime.Now, default).ToArray();
 
-            Assert.IsTrue(dates7.Count() == 7);
+            Assert.IsTrue(dates7.Length == 7);
 
-            var bits1 = "0001000";
+            const string bits1 = "0001000";
 
             var dates1 = bits1.GetDates(DateTime.Now, default).ToArray();
 
-            Assert.IsTrue(dates1.Count() == 1);
+            Assert.IsTrue(dates1.Length == 1);
         }
 
         [Test]
@@ -93,33 +93,9 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
-        public void GetBitmaskFromDates()
-        {
-            var dates = new DateTime[] { DateTime.Today, DateTime.Today.AddDays(2) };
-
-            var result = dates.ToBitmask();
-
-            Assert.IsTrue(result == "101");
-        }
-
-        [Test]
-        public void GetEmptyBitmask()
-        {
-            var dates = Array.Empty<DateTime>();
-
-            var resultWoDefault = dates.ToBitmask();
-
-            Assert.IsTrue(string.IsNullOrEmpty(resultWoDefault));
-
-            var resultWDefault = dates.ToBitmask(true);
-
-            Assert.IsTrue(resultWDefault == default);
-        }
-
-        [Test]
         public void GetMultipleDatesFromEmpty()
         {
-            var test = "  ";
+            const string test = "  ";
 
             var dates = test.GetDates();
 
@@ -129,7 +105,7 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetMultipleDatesFromfalse()
         {
-            var test = "2020-02-31,2020-02-32";
+            const string test = "2020-02-31,2020-02-32";
 
             var dates = test.GetDates();
 
@@ -139,7 +115,7 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetMultipleDatesFromString()
         {
-            var test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
+            const string test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
 
             var dates = test.GetDates();
 
@@ -149,7 +125,7 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetMultipleDatesWithFromToSeparator()
         {
-            var test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
+            const string test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
 
             Assert.Throws<ArgumentException>(() => test.GetDates(">"));
         }
@@ -157,7 +133,7 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetMultipleDatesWithOtherSeparator()
         {
-            var test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
+            const string test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
 
             var dates = test.GetDates(";");
 
