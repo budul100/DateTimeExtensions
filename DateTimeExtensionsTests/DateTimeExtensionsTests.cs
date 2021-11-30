@@ -93,6 +93,32 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void GetDatesWithDaysOfWeek()
+        {
+            var daysOfWeek = new DayOfWeek[] { DayOfWeek.Friday, DayOfWeek.Tuesday };
+
+            var from = DateTime.Now.AddDays(-6);
+            var to = DateTime.Now.AddDays(7);
+
+            var result = from.GetDates(
+                to: to,
+                daysOfWeek: daysOfWeek).ToArray();
+
+            Assert.True(result.Length == 4);
+        }
+
+        [Test]
+        public void GetDatesWithoutDaysOfWeek()
+        {
+            var from = DateTime.Now.AddDays(-5);
+            var to = DateTime.Now.AddDays(5);
+
+            var result = from.GetDates(to).ToArray();
+
+            Assert.True(result.Length == 11);
+        }
+
+        [Test]
         public void GetMultipleDatesFromEmpty()
         {
             const string test = "  ";
