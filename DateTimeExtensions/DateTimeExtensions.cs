@@ -126,8 +126,8 @@ namespace DateTimeExtensions
             if (separator?.Contains(FromToDatesSeparator) ?? false)
             {
                 throw new ArgumentException(
-                    $"The argument splitter cannot be '{FromToDatesSeparator}' since it is used to split from and to values of periods.",
-                    nameof(separator));
+                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' since it is used to split from and to values of periods.",
+                    paramName: nameof(separator));
             }
 
             var result = default(IEnumerable<DateTime>);
@@ -140,7 +140,7 @@ namespace DateTimeExtensions
                     separator: sectionSeparators,
                     options: StringSplitOptions.RemoveEmptyEntries);
 
-                result = sections.GetDates()
+                result = sections.SelectDates()
                     .OrderBy(d => d).ToArray();
             }
 
@@ -218,7 +218,7 @@ namespace DateTimeExtensions
 
         #region Private Methods
 
-        private static IEnumerable<DateTime> GetDates(this IEnumerable<string> sections)
+        private static IEnumerable<DateTime> SelectDates(this IEnumerable<string> sections)
         {
             foreach (var section in sections)
             {
@@ -226,17 +226,29 @@ namespace DateTimeExtensions
                     separator: fromToDatesSeparators,
                     options: StringSplitOptions.RemoveEmptyEntries)
                     .Select(c => c.ToDateTime())
-                    .Where(d => d.HasValue)
-                    .OrderBy(d => d).ToArray();
+                    .Where(d => d.HasValue).ToArray();
 
                 if (currents?.Any() ?? false)
                 {
-                    var from = currents[0].Value;
-                    var to = currents.Last().Value;
-
-                    for (var date = from; date <= to; date = date.AddDays(1))
+                    if (currents.Length > 1)
                     {
-                        yield return date.Date;
+                        var from = currents[0].Value;
+                        var to = currents.Last().Value;
+
+                        if (to < from)
+                        {
+                            throw new FormatException(
+                                message: $"The dates order is wrong. The first date is later than the second date: {section}.");
+                        }
+
+                        for (var date = from; date <= to; date = date.AddDays(1))
+                        {
+                            yield return date.Date;
+                        }
+                    }
+                    else
+                    {
+                        yield return currents.Single().Value.Date;
                     }
                 }
             }

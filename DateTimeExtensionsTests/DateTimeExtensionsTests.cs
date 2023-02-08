@@ -151,6 +151,14 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void GetMultipleDatesFromStringWithWrongOrder()
+        {
+            const string test = "2020-01-10,2020-01-14>2020-01-12,2020-01-16";
+
+            Assert.Throws<FormatException>(() => test.GetDates());
+        }
+
+        [Test]
         public void GetMultipleDatesWithFromToSeparator()
         {
             const string test = "2020-01-10;2020-01-12>2020-01-14;2020-01-16";
