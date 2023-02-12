@@ -12,23 +12,30 @@ namespace DateTimeExtensionsTests
         [Test]
         public void BitmaskSingleBit()
         {
-            const string singleNoneBit = "0";
+            const string singleNoneBit = "F";
+            const string singleBit = "T";
 
             var startOnlyNone = singleNoneBit.GetDates(DateTime.Now).ToArray();
 
             Assert.IsFalse(startOnlyNone.Length > 0);
 
-            var startAndEmptyEndNone = singleNoneBit.GetDates(DateTime.Now, default).ToArray();
+            var startAndEmptyEndNone = singleNoneBit.GetDates(
+                startDate: DateTime.Now,
+                endDate: default,
+                positiveBit: singleBit[0]).ToArray();
 
             Assert.IsFalse(startAndEmptyEndNone.Length > 0);
 
-            const string singleBit = "1";
-
-            var startOnly = singleBit.GetDates(DateTime.Now);
+            var startOnly = singleBit.GetDates(
+                startDate: DateTime.Now,
+                positiveBit: singleBit[0]).ToArray();
 
             Assert.IsTrue(startOnly.Single() == DateTime.Today);
 
-            var startAndEmptyEnd = singleBit.GetDates(DateTime.Now, default).ToArray();
+            var startAndEmptyEnd = singleBit.GetDates(
+                startDate: DateTime.Now,
+                endDate: default,
+                positiveBit: singleBit[0]).ToArray();
 
             Assert.IsTrue(startAndEmptyEnd.Single() == DateTime.Today);
         }

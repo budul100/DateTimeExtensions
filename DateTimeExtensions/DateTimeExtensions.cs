@@ -77,7 +77,8 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static IEnumerable<DateTime> GetDates(this DateTime from, DateTime to, IEnumerable<DayOfWeek> daysOfWeek = default)
+        public static IEnumerable<DateTime> GetDates(this DateTime from, DateTime to,
+            IEnumerable<DayOfWeek> daysOfWeek = default)
         {
             var start = from <= to ? from : to;
             var end = to >= from ? to : from;
@@ -91,10 +92,11 @@ namespace DateTimeExtensions
             }
         }
 
-        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate, DateTime? endDate = default)
+        public static IEnumerable<DateTime> GetDates(this string bitMask, DateTime startDate,
+            DateTime? endDate = default, char positiveBit = ValueExtensions.PositiveBit)
         {
-            var bits = bitMask?
-                .GetBits().ToArray();
+            var bits = bitMask?.GetBits(
+                positiveBit: positiveBit).ToArray();
 
             if (bits?.Any() ?? false)
             {

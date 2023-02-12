@@ -13,9 +13,11 @@ namespace DateTimeExtensionsTests
         {
             var dates = new DateTime[] { DateTime.Today, DateTime.Today.AddDays(2) };
 
-            var result = dates.ToBitmask();
+            var result = dates.ToBitmask(
+                positiveBit: 'Y',
+                negativeBit: 'N');
 
-            Assert.IsTrue(result == "101");
+            Assert.IsTrue(result == "YNY");
         }
 
         [Test]

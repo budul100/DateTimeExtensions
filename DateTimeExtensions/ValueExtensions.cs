@@ -17,7 +17,7 @@ namespace DateTimeExtensions
 
         #region Public Methods
 
-        public static IEnumerable<int> GetBits(this string bitMask)
+        public static IEnumerable<int> GetBits(this string bitMask, char positiveBit = PositiveBit)
         {
             if (bitMask?.Any() ?? false)
             {
@@ -25,7 +25,7 @@ namespace DateTimeExtensions
 
                 for (int i = 0; i < bits.Length; i++)
                 {
-                    if (bits[i] == PositiveBit)
+                    if (bits[i] == positiveBit)
                     {
                         yield return i;
                     }
@@ -33,7 +33,8 @@ namespace DateTimeExtensions
             }
         }
 
-        public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end, bool defaultOnEmpty = false)
+        public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end,
+            bool defaultOnEmpty = false, char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
             var result = new StringBuilder();
 
@@ -42,8 +43,8 @@ namespace DateTimeExtensions
                 for (var date = begin; date <= end; date = date.AddDays(1))
                 {
                     var bit = dates.Contains(date)
-                        ? PositiveBit
-                        : NegativeBit;
+                        ? positiveBit
+                        : negativeBit;
 
                     result.Append(bit);
                 }
@@ -54,7 +55,8 @@ namespace DateTimeExtensions
                 : result.ToString();
         }
 
-        public static string ToBitmask(this IEnumerable<DateTime> dates, bool defaultOnEmpty = false)
+        public static string ToBitmask(this IEnumerable<DateTime> dates, bool defaultOnEmpty = false,
+            char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
             var result = default(string);
 
@@ -63,7 +65,9 @@ namespace DateTimeExtensions
                 result = dates?.ToBitmask(
                     begin: dates?.Min() ?? DateTime.MinValue,
                     end: dates?.Max() ?? DateTime.MinValue,
-                    defaultOnEmpty: defaultOnEmpty);
+                    defaultOnEmpty: defaultOnEmpty,
+                    positiveBit: positiveBit,
+                    negativeBit: negativeBit);
             }
 
             if (result == default)
@@ -76,7 +80,8 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static string ToBitmask(this IEnumerable<int> numbers, int length, bool defaultOnEmpty = false)
+        public static string ToBitmask(this IEnumerable<int> numbers, int length, bool defaultOnEmpty = false,
+            char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
             var result = new StringBuilder();
 
@@ -85,8 +90,8 @@ namespace DateTimeExtensions
                 for (var number = 0; number < length; number++)
                 {
                     var bit = numbers.Contains(number)
-                        ? PositiveBit
-                        : NegativeBit;
+                        ? positiveBit
+                        : negativeBit;
 
                     result.Append(bit);
                 }
@@ -97,7 +102,8 @@ namespace DateTimeExtensions
                 : result.ToString();
         }
 
-        public static string ToBitmask(this IEnumerable<int> bits, bool defaultOnEmpty = false)
+        public static string ToBitmask(this IEnumerable<int> bits, bool defaultOnEmpty = false,
+            char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
             var result = default(string);
 
@@ -105,7 +111,9 @@ namespace DateTimeExtensions
             {
                 result = bits.ToBitmask(
                     length: bits.Max(),
-                    defaultOnEmpty: defaultOnEmpty);
+                    defaultOnEmpty: defaultOnEmpty,
+                    positiveBit: positiveBit,
+                    negativeBit: negativeBit);
             }
 
             if (result == default)
