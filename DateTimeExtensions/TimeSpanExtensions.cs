@@ -8,7 +8,7 @@ namespace DateTimeExtensions
     {
         #region Private Fields
 
-        private static readonly Regex timespanPattern =
+        private static readonly Regex timespanRegex =
             new Regex(@"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*");
 
         #endregion Private Fields
@@ -89,7 +89,7 @@ namespace DateTimeExtensions
             return result;
         }
 
-        public static TimeSpan? ToTimeSpan(this string input)
+        public static TimeSpan? ToTimeSpan(this string input, string delimiters = default)
         {
             var result = default(TimeSpan?);
 
@@ -105,9 +105,22 @@ namespace DateTimeExtensions
                     result = DateTime.FromOADate(current) -
                         DateTime.FromOADate(0);
                 }
+                else if (!string.IsNullOrWhiteSpace(delimiters))
+                {
+                    var delimitersEscaped = Regex.Escape(
+                        str: delimiters);
+
+                    var delimitersPattern = $@"(?<h>\d{{1,2}})[{delimitersEscaped}](?<m>\d{{1,2}})([{delimitersEscaped}](?<s>\d{{1,2}}))?";
+                    var delimitersRegex = new Regex(
+                        pattern: delimitersPattern);
+
+                    result = input.ParseTime(
+                        regex: delimitersRegex);
+                }
                 else
                 {
-                    result = input.ParseTime();
+                    result = input.ParseTime(
+                        regex: timespanRegex);
                 }
             }
 
@@ -118,44 +131,44 @@ namespace DateTimeExtensions
 
         #region Private Methods
 
-        private static TimeSpan? ParseTime(this string input)
+        private static TimeSpan? ParseTime(this string input, Regex regex)
         {
             var result = default(TimeSpan?);
 
             if (!string.IsNullOrWhiteSpace(input))
             {
-                if (timespanPattern.Match(input).Groups["h"].Success
-                    && timespanPattern.Match(input).Groups["m"].Success)
+                if (regex.Match(input).Groups["h"].Success
+                    && regex.Match(input).Groups["m"].Success)
                 {
                     var days = 0;
 
-                    if (timespanPattern.Match(input).Groups["d1"].Success)
+                    if (regex.Match(input).Groups["d1"].Success)
                     {
                         days = int.Parse(
-                            s: timespanPattern.Match(input).Groups["d1"].Value,
+                            s: regex.Match(input).Groups["d1"].Value,
                             provider: CultureInfo.InvariantCulture);
                     }
-                    else if (timespanPattern.Match(input).Groups["d2"].Success)
+                    else if (regex.Match(input).Groups["d2"].Success)
                     {
                         days = int.Parse(
-                            s: timespanPattern.Match(input).Groups["d2"].Value,
+                            s: regex.Match(input).Groups["d2"].Value,
                             provider: CultureInfo.InvariantCulture);
                     }
 
                     var hours = int.Parse(
-                        s: timespanPattern.Match(input).Groups["h"].Value,
+                        s: regex.Match(input).Groups["h"].Value,
                         provider: CultureInfo.InvariantCulture);
 
                     var minutes = int.Parse(
-                        s: timespanPattern.Match(input).Groups["m"].Value,
+                        s: regex.Match(input).Groups["m"].Value,
                         provider: CultureInfo.InvariantCulture);
 
                     var seconds = 0;
 
-                    if (timespanPattern.Match(input).Groups["s"].Success)
+                    if (regex.Match(input).Groups["s"].Success)
                     {
                         seconds = int.Parse(
-                            s: timespanPattern.Match(input).Groups["s"].Value,
+                            s: regex.Match(input).Groups["s"].Value,
                             provider: CultureInfo.InvariantCulture);
                     }
 
