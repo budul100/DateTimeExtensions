@@ -91,40 +91,47 @@ namespace DateTimeExtensions
 
         public static TimeSpan? ToTimeSpan(this string input, string delimiters = default)
         {
-            var result = default(TimeSpan?);
-
             if (!string.IsNullOrWhiteSpace(input))
             {
-                if (double.TryParse(input, out double resultValue)
-                    && resultValue.ToString(CultureInfo.InvariantCulture) == input.Trim())
+                if (double.TryParse(
+                    s: input,
+                    style: NumberStyles.Any,
+                    provider: CultureInfo.CurrentCulture,
+                    result: out double current)
+                    && current.ToString(CultureInfo.CurrentCulture) == input.Trim())
                 {
-                    var current = Convert.ToDouble(
-                        value: input,
-                        provider: CultureInfo.InvariantCulture);
-
-                    result = DateTime.FromOADate(current) -
-                        DateTime.FromOADate(0);
+                    return DateTime.FromOADate(current) - DateTime.FromOADate(0);
                 }
-                else if (!string.IsNullOrWhiteSpace(delimiters))
+
+                if (double.TryParse(
+                    s: input,
+                    style: NumberStyles.Any,
+                    provider: CultureInfo.InvariantCulture,
+                    result: out double invariant)
+                    && invariant.ToString(CultureInfo.InvariantCulture) == input.Trim())
+                {
+                    return DateTime.FromOADate(invariant) - DateTime.FromOADate(0);
+                }
+
+                if (!string.IsNullOrWhiteSpace(delimiters))
                 {
                     var delimitersEscaped = Regex.Escape(
                         str: delimiters);
 
-                    var delimitersPattern = $@"(?<h>\d{{1,2}})[{delimitersEscaped}](?<m>\d{{1,2}})([{delimitersEscaped}](?<s>\d{{1,2}}))?";
+                    var delimitersPattern =
+                        $@"(?<h>\d{{1,2}})[{delimitersEscaped}](?<m>\d{{1,2}})([{delimitersEscaped}](?<s>\d{{1,2}}))?";
                     var delimitersRegex = new Regex(
                         pattern: delimitersPattern);
 
-                    result = input.ParseTime(
+                    return input.ParseTime(
                         regex: delimitersRegex);
                 }
-                else
-                {
-                    result = input.ParseTime(
-                        regex: timespanRegex);
-                }
+
+                return input.ParseTime(
+                    regex: timespanRegex);
             }
 
-            return result;
+            return default;
         }
 
         #endregion Public Methods
