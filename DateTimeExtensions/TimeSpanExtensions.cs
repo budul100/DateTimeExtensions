@@ -9,7 +9,7 @@ namespace DateTimeExtensions
         #region Private Fields
 
         private static readonly Regex timespanRegex =
-            new Regex(@"((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?.*");
+            new Regex(@"((?<h>\d{2})(?<m>\d{2})(?<s>\d{2})?)|(((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?)");
 
         #endregion Private Fields
 
@@ -98,7 +98,8 @@ namespace DateTimeExtensions
                     style: NumberStyles.Any,
                     provider: CultureInfo.CurrentCulture,
                     result: out double current)
-                    && current.ToString(CultureInfo.CurrentCulture) == input.Trim())
+                    && current.ToString(CultureInfo.CurrentCulture) == input.Trim()
+                    && (current < 1 || current % 1 != 0))
                 {
                     return DateTime.FromOADate(current) - DateTime.FromOADate(0);
                 }
@@ -108,7 +109,8 @@ namespace DateTimeExtensions
                     style: NumberStyles.Any,
                     provider: CultureInfo.InvariantCulture,
                     result: out double invariant)
-                    && invariant.ToString(CultureInfo.InvariantCulture) == input.Trim())
+                    && invariant.ToString(CultureInfo.InvariantCulture) == input.Trim()
+                    && (invariant < 1 || invariant % 1 != 0))
                 {
                     return DateTime.FromOADate(invariant) - DateTime.FromOADate(0);
                 }
