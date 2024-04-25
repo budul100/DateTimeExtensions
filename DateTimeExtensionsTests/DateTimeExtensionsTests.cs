@@ -227,10 +227,20 @@ namespace DateTimeExtensionsTests
 
             Assert.That(ranges.Count() == 3);
 
+            Assert.That(ranges.ElementAt(0).Item1.Day == 10);
+            Assert.That(ranges.ElementAt(0).Item1.Hour == 0);
+            Assert.That(ranges.ElementAt(0).Item2.Day == 10);
+            Assert.That(ranges.ElementAt(0).Item2.Hour == 23);
+
             Assert.That(ranges.ElementAt(1).Item1.Day == 12);
             Assert.That(ranges.ElementAt(1).Item1.Hour == 10);
             Assert.That(ranges.ElementAt(1).Item2.Day == 14);
             Assert.That(ranges.ElementAt(1).Item2.Hour == 18);
+
+            Assert.That(ranges.ElementAt(2).Item1.Day == 16);
+            Assert.That(ranges.ElementAt(2).Item1.Hour == 0);
+            Assert.That(ranges.ElementAt(2).Item2.Day == 16);
+            Assert.That(ranges.ElementAt(2).Item2.Hour == 23);
         }
 
         [Test]

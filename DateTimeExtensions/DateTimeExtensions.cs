@@ -16,6 +16,12 @@ namespace DateTimeExtensions
 
         private static readonly string[] fromToDatesSeparators = new string[] { FromToDatesSeparator };
 
+        private static TimeSpan oneDay = new TimeSpan(
+            days: 1,
+            hours: 0,
+            minutes: 0,
+            seconds: 0).Subtract(new TimeSpan(1));
+
         #endregion Private Fields
 
         #region Public Methods
@@ -300,23 +306,29 @@ namespace DateTimeExtensions
 
                 if (currents?.Any() ?? false)
                 {
-                    if (currents.Length > 1)
+                    DateTime from;
+                    DateTime to;
+
+                    if (currents.Length == 1)
                     {
-                        var from = currents[0].Value;
-                        var to = currents.Last().Value;
+                        from = currents.Single().Value;
+                        to = from.Add(oneDay);
+                    }
+                    else
+                    {
+                        from = currents[0].Value;
+                        to = currents.Last().Value.TimeOfDay == TimeSpan.Zero
+                            ? currents.Last().Value.Add(oneDay)
+                            : currents.Last().Value;
 
                         if (to < from)
                         {
                             throw new FormatException(
                                 message: $"The dates order is wrong. The first date is later than the second date: {section}.");
                         }
+                    }
 
-                        yield return (from, to);
-                    }
-                    else
-                    {
-                        yield return (currents.Single().Value, currents.Single().Value);
-                    }
+                    yield return (from, to);
                 }
             }
         }
