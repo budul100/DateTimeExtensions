@@ -1,7 +1,7 @@
-using DateTimeExtensions;
-using NUnit.Framework;
 using System;
 using System.Linq;
+using DateTimeExtensions;
+using NUnit.Framework;
 
 namespace DateTimeExtensionsTests
 {
@@ -100,6 +100,36 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
+        public void GetDatesFromEmpty()
+        {
+            const string test = "  ";
+
+            var dates = test.GetDates();
+
+            Assert.That(!dates.Any());
+        }
+
+        [Test]
+        public void GetDatesFromString()
+        {
+            const string test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
+
+            var dates = test.GetDates();
+
+            Assert.That(dates.Count() == 5);
+        }
+
+        [Test]
+        public void GetDatesFromWrongFormat()
+        {
+            const string test = "2020-02-31,2020-02-32";
+
+            var dates = test.GetDates();
+
+            Assert.That(!dates.Any());
+        }
+
+        [Test]
         public void GetDatesWithDaysOfWeek()
         {
             var daysOfWeek = new DayOfWeek[] { DayOfWeek.Friday, DayOfWeek.Tuesday };
@@ -125,36 +155,6 @@ namespace DateTimeExtensionsTests
             var result = from.GetDates(to, daysOfWeek).ToArray();
 
             Assert.That(result.Length == 11);
-        }
-
-        [Test]
-        public void GetMultipleDatesFromEmpty()
-        {
-            const string test = "  ";
-
-            var dates = test.GetDates();
-
-            Assert.That(!dates.Any());
-        }
-
-        [Test]
-        public void GetMultipleDatesFromfalse()
-        {
-            const string test = "2020-02-31,2020-02-32";
-
-            var dates = test.GetDates();
-
-            Assert.That(!dates.Any());
-        }
-
-        [Test]
-        public void GetMultipleDatesFromString()
-        {
-            const string test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
-
-            var dates = test.GetDates();
-
-            Assert.That(dates.Count() == 5);
         }
 
         [Test]
@@ -231,6 +231,21 @@ namespace DateTimeExtensionsTests
 
             Assert.That(DateTime.Today.GetPrevious(DayOfWeek.Sunday).DayOfWeek == DayOfWeek.Sunday);
             Assert.That(DateTime.Today.GetPrevious(DayOfWeek.Sunday) <= DateTime.Today);
+        }
+
+        [Test]
+        public void GetRangesFromString()
+        {
+            const string test = "2020-01-10,2020-01-12 10:00>2020-01-14 18:00,2020-01-16";
+
+            var ranges = test.GetRanges();
+
+            Assert.That(ranges.Count() == 3);
+
+            Assert.That(ranges.ElementAt(1).Item1.Day == 12);
+            Assert.That(ranges.ElementAt(1).Item1.Hour == 10);
+            Assert.That(ranges.ElementAt(1).Item2.Day == 14);
+            Assert.That(ranges.ElementAt(1).Item2.Hour == 18);
         }
 
         [Test]

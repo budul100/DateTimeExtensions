@@ -128,7 +128,8 @@ namespace DateTimeExtensions
             if (separator?.Contains(FromToDatesSeparator) ?? false)
             {
                 throw new ArgumentException(
-                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' since it is used to split from and to values of periods.",
+                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' " +
+                        "since it is used to split from and to values of periods.",
                     paramName: nameof(separator));
             }
 
@@ -164,6 +165,35 @@ namespace DateTimeExtensions
             return start.AddDays(daysToAdd);
         }
 
+        public static IEnumerable<(DateTime, DateTime)> GetRanges(this string dates, string separator = ",")
+        {
+            if (separator?.Contains(FromToDatesSeparator) ?? false)
+            {
+                throw new ArgumentException(
+                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' " +
+                        "since it is used to split from and to values of periods.",
+                    paramName: nameof(separator));
+            }
+
+            var result = default(IEnumerable<(DateTime, DateTime)>);
+
+            if (!string.IsNullOrWhiteSpace(dates))
+            {
+                var sectionSeparators = new string[] { separator };
+
+                var sections = dates.Split(
+                    separator: sectionSeparators,
+                    options: StringSplitOptions.RemoveEmptyEntries);
+
+                result = sections.SelectRanges()
+                    .OrderBy(d => d.Item1)
+                    .ThenBy(d => d.Item2).ToArray();
+            }
+
+            return result
+                ?? Enumerable.Empty<(DateTime, DateTime)>();
+        }
+
         public static IEnumerable<DateTime> GetShifted(this IEnumerable<DateTime> dates, int shift)
         {
             if (dates?.Any() ?? false)
@@ -175,42 +205,44 @@ namespace DateTimeExtensions
             }
         }
 
-        public static DateTime GetShifted(this DateTime date, int shift)
+        public static DateTime GetShifted(this DateTime value, int shift)
         {
-            return date.AddDays(shift);
+            return value.AddDays(shift);
         }
 
-        public static DateTime? GetShifted(this DateTime? date, int shift)
+        public static DateTime? GetShifted(this DateTime? value, int shift)
         {
-            return date?.GetShifted(shift);
+            return value?.GetShifted(shift);
         }
 
-        public static DateTime ToDateTime(this TimeSpan time)
+        public static DateTime ToDateTime(this TimeSpan value)
         {
-            var result = new DateTime(time.Ticks);
+            var result = new DateTime(value.Ticks);
 
             return result;
         }
 
-        public static DateTime? ToDateTime(this TimeSpan? time)
+        public static DateTime? ToDateTime(this TimeSpan? value)
         {
             var result = default(DateTime?);
 
-            if (time.HasValue)
+            if (value.HasValue)
             {
-                result = time.Value.ToDateTime();
+                result = value.Value.ToDateTime();
             }
 
             return result;
         }
 
-        public static DateTime? ToDateTime(this string date)
+        public static DateTime? ToDateTime(this string value)
         {
             var result = default(DateTime?);
 
-            if (DateTime.TryParse(date, out DateTime newDate))
+            if (DateTime.TryParse(
+                s: value,
+                result: out DateTime parsed))
             {
-                result = newDate;
+                result = parsed;
             }
 
             return result;
@@ -251,6 +283,39 @@ namespace DateTimeExtensions
                     else
                     {
                         yield return currents.Single().Value.Date;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<(DateTime, DateTime)> SelectRanges(this IEnumerable<string> sections)
+        {
+            foreach (var section in sections)
+            {
+                var currents = section.Split(
+                    separator: fromToDatesSeparators,
+                    options: StringSplitOptions.RemoveEmptyEntries)
+                    .Select(c => c.ToDateTime())
+                    .Where(d => d.HasValue).ToArray();
+
+                if (currents?.Any() ?? false)
+                {
+                    if (currents.Length > 1)
+                    {
+                        var from = currents[0].Value;
+                        var to = currents.Last().Value;
+
+                        if (to < from)
+                        {
+                            throw new FormatException(
+                                message: $"The dates order is wrong. The first date is later than the second date: {section}.");
+                        }
+
+                        yield return (from, to);
+                    }
+                    else
+                    {
+                        yield return (currents.Single().Value, currents.Single().Value);
                     }
                 }
             }
