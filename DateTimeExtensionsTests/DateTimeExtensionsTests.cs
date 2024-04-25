@@ -1,7 +1,7 @@
-using DateTimeExtensions;
-using NUnit.Framework;
 using System;
 using System.Linq;
+using DateTimeExtensions;
+using NUnit.Framework;
 
 namespace DateTimeExtensionsTests
 {
@@ -100,7 +100,17 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
-        public void GetDatesFromEmpty()
+        public void GetDatesFromDatesString()
+        {
+            const string test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
+
+            var dates = test.GetDates();
+
+            Assert.That(dates.Count() == 5);
+        }
+
+        [Test]
+        public void GetDatesFromEmptyString()
         {
             const string test = "  ";
 
@@ -110,9 +120,9 @@ namespace DateTimeExtensionsTests
         }
 
         [Test]
-        public void GetDatesFromString()
+        public void GetDatesFromPeriodsString()
         {
-            const string test = "2020-01-10,2020-01-12>2020-01-14,2020-01-16";
+            const string test = "2020-01-10,2020-01-12 10:00>2020-01-14 18:00,2020-01-16";
 
             var dates = test.GetDates();
 
