@@ -158,14 +158,7 @@ namespace DateTimeExtensions
             return start.AddDays(daysToAdd);
         }
 
-        public static DateTime GetPrevious(this DateTime start, DayOfWeek day)
-        {
-            var daysToAdd = ((int)day - (int)start.DayOfWeek - 7) % 7;
-
-            return start.AddDays(daysToAdd);
-        }
-
-        public static IEnumerable<(DateTime, DateTime)> GetRanges(this string dates, string separator = ",")
+        public static IEnumerable<(DateTime, DateTime)> GetPeriods(this string dates, string separator = ",")
         {
             if (separator?.Contains(FromToDatesSeparator) ?? false)
             {
@@ -185,13 +178,20 @@ namespace DateTimeExtensions
                     separator: sectionSeparators,
                     options: StringSplitOptions.RemoveEmptyEntries);
 
-                result = sections.SelectRanges()
+                result = sections.SelectPeriods()
                     .OrderBy(d => d.Item1)
                     .ThenBy(d => d.Item2).ToArray();
             }
 
             return result
                 ?? Enumerable.Empty<(DateTime, DateTime)>();
+        }
+
+        public static DateTime GetPrevious(this DateTime start, DayOfWeek day)
+        {
+            var daysToAdd = ((int)day - (int)start.DayOfWeek - 7) % 7;
+
+            return start.AddDays(daysToAdd);
         }
 
         public static IEnumerable<DateTime> GetShifted(this IEnumerable<DateTime> dates, int shift)
@@ -288,7 +288,7 @@ namespace DateTimeExtensions
             }
         }
 
-        private static IEnumerable<(DateTime, DateTime)> SelectRanges(this IEnumerable<string> sections)
+        private static IEnumerable<(DateTime, DateTime)> SelectPeriods(this IEnumerable<string> sections)
         {
             foreach (var section in sections)
             {
