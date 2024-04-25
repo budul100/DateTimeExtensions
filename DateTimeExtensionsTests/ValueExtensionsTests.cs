@@ -17,7 +17,7 @@ namespace DateTimeExtensionsTests
                 positiveBit: 'Y',
                 negativeBit: 'N');
 
-            Assert.IsTrue(result == "YNY");
+            Assert.That(result == "YNY");
         }
 
         [Test]
@@ -27,11 +27,11 @@ namespace DateTimeExtensionsTests
 
             var resultWoDefault = dates.ToBitmask();
 
-            Assert.IsTrue(string.IsNullOrEmpty(resultWoDefault));
+            Assert.That(string.IsNullOrEmpty(resultWoDefault));
 
             var resultWDefault = dates.ToBitmask(true);
 
-            Assert.IsTrue(resultWDefault == default);
+            Assert.That(resultWDefault == default);
         }
 
         #endregion Public Methods
