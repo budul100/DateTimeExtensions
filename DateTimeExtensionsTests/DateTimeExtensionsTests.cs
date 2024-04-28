@@ -1,7 +1,7 @@
-using System;
-using System.Linq;
 using DateTimeExtensions;
 using NUnit.Framework;
+using System;
+using System.Linq;
 
 namespace DateTimeExtensionsTests
 {
@@ -122,7 +122,7 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetDatesFromPeriodsString()
         {
-            const string test = "2020-01-10,2020-01-12 10:00>2020-01-14 18:00,2020-01-16";
+            const string test = "2020-01-10,xxx,2020-01-12 18:00>2020-01-14 10:00,,2020-01-16";
 
             var dates = test.GetDates();
 
@@ -221,7 +221,7 @@ namespace DateTimeExtensionsTests
         [Test]
         public void GetPeriods()
         {
-            const string test = "2020-01-10,2020-01-12 10:00>2020-01-14 18:00,2020-01-16";
+            const string test = "2020-01-10,xxx,2020-01-12 18:00>2020-01-14 10:00,,2020-01-16";
 
             var ranges = test.GetPeriods();
 
@@ -233,9 +233,9 @@ namespace DateTimeExtensionsTests
             Assert.That(ranges.ElementAt(0).Item2.Hour == 23);
 
             Assert.That(ranges.ElementAt(1).Item1.Day == 12);
-            Assert.That(ranges.ElementAt(1).Item1.Hour == 10);
+            Assert.That(ranges.ElementAt(1).Item1.Hour == 18);
             Assert.That(ranges.ElementAt(1).Item2.Day == 14);
-            Assert.That(ranges.ElementAt(1).Item2.Hour == 18);
+            Assert.That(ranges.ElementAt(1).Item2.Hour == 10);
 
             Assert.That(ranges.ElementAt(2).Item1.Day == 16);
             Assert.That(ranges.ElementAt(2).Item1.Hour == 0);

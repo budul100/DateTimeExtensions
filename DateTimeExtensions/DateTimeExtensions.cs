@@ -265,7 +265,7 @@ namespace DateTimeExtensions
                 var currents = section.Split(
                     separator: fromToDatesSeparators,
                     options: StringSplitOptions.RemoveEmptyEntries)
-                    .Select(c => c.ToDateTime())
+                    .Select(c => c.ToDateTime()?.Date)
                     .Where(d => d.HasValue).ToArray();
 
                 if (currents?.Any() ?? false)
