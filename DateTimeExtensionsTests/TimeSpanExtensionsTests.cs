@@ -59,6 +59,20 @@ namespace DateTimeExtensionsTests
             Assert.That(result2.Value.Hours == 13);
             Assert.That(result2.Value.Minutes == 20);
             Assert.That(result2.Value.Seconds == 55);
+
+            const string time3 = "0408";
+            var result3 = time3.ToTimeSpan();
+
+            Assert.That(result3.Value.Hours == 4);
+            Assert.That(result3.Value.Minutes == 8);
+            Assert.That(result3.Value.Seconds == 0);
+
+            const string time4 = "2255";
+            var result4 = time4.ToTimeSpan();
+
+            Assert.That(result4.Value.Hours == 22);
+            Assert.That(result4.Value.Minutes == 55);
+            Assert.That(result4.Value.Seconds == 0);
         }
 
         #endregion Public Methods
