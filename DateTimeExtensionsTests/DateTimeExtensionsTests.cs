@@ -71,20 +71,26 @@ namespace DateTimeExtensionsTests
         {
             var cycle = new DateTime[] { new(2020, 1, 10), new(2020, 1, 16) };
 
-            var inCycle = new DateTime(2020, 1, 12).ShiftIntoCycle(cycle);
-            Assert.True(inCycle == new DateTime(2020, 1, 12));
+            var inPeriod = new DateTime(2020, 1, 12).MoveInPeriod(cycle);
+            Assert.True(inPeriod == new DateTime(2020, 1, 12));
 
-            var atBorder = new DateTime(2020, 1, 10).ShiftIntoCycle(cycle);
-            Assert.True(atBorder == new DateTime(2020, 1, 10));
+            var atBorderRight = new DateTime(2020, 1, 17).MoveInPeriod(cycle);
+            Assert.True(atBorderRight == new DateTime(2020, 1, 10));
 
-            var leftAtBorder = new DateTime(2020, 1, 2).ShiftIntoCycle(cycle);
-            Assert.True(leftAtBorder == new DateTime(2020, 1, 16));
+            var atBorderLeft = new DateTime(2020, 1, 9).MoveInPeriod(cycle);
+            Assert.True(atBorderLeft == new DateTime(2020, 1, 16));
 
-            var leftToCycle = new DateTime(2020, 1, 3).ShiftIntoCycle(cycle);
-            Assert.True(leftToCycle == new DateTime(2020, 1, 10));
+            var leftToPeriod = new DateTime(2020, 1, 2).MoveInPeriod(cycle, false);
+            Assert.True(leftToPeriod == new DateTime(2020, 1, 9));
 
-            var rightToCycle = new DateTime(2020, 1, 30).ShiftIntoCycle(cycle);
-            Assert.True(rightToCycle == new DateTime(2020, 1, 16));
+            var leftToCycle = new DateTime(2020, 1, 2).MoveInPeriod(cycle, true);
+            Assert.True(leftToCycle == new DateTime(2020, 1, 16));
+
+            var rightToPeriod = new DateTime(2020, 1, 24).MoveInPeriod(cycle, false);
+            Assert.True(rightToPeriod == new DateTime(2020, 1, 17));
+
+            var rightToCycle = new DateTime(2020, 1, 24).MoveInPeriod(cycle, true);
+            Assert.True(rightToCycle == new DateTime(2020, 1, 10));
         }
 
         [Fact]
@@ -92,11 +98,11 @@ namespace DateTimeExtensionsTests
         {
             var cycle = new DateTime[] { new(2020, 1, 10) };
 
-            var outCycle = new DateTime(2020, 1, 12).ShiftIntoCycle(cycle);
-            Assert.True(outCycle == new DateTime(2020, 1, 10));
+            var inPeriod = new DateTime(2020, 1, 10).MoveInPeriod(cycle);
+            Assert.True(inPeriod == new DateTime(2020, 1, 10));
 
-            var inCycle = new DateTime(2020, 1, 10).ShiftIntoCycle(cycle);
-            Assert.True(inCycle == new DateTime(2020, 1, 10));
+            var outPeriod = new DateTime(2020, 1, 12).MoveInPeriod(cycle);
+            Assert.True(outPeriod == new DateTime(2020, 1, 10));
         }
 
         [Fact]

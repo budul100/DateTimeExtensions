@@ -143,6 +143,74 @@ namespace DateTimeExtensions
             return start.AddDays(daysToAdd);
         }
 
+        public static IEnumerable<DateTime> MoveInPeriod(this IEnumerable<DateTime> dates,
+            IEnumerable<DateTime> period, bool isCyclic = false)
+        {
+            if (dates?.Any() ?? false)
+            {
+                foreach (var date in dates)
+                {
+                    yield return date.MoveInPeriod(
+                        period,
+                        isCyclic);
+                }
+            }
+        }
+
+        public static DateTime? MoveInPeriod(this DateTime? date, IEnumerable<DateTime> period, bool isCyclic = false)
+        {
+            var result = default(DateTime?);
+
+            if (date.HasValue)
+            {
+                result = date.Value.MoveInPeriod(
+                    period: period,
+                    isCyclic: isCyclic);
+            }
+
+            return result;
+        }
+
+        public static DateTime MoveInPeriod(this DateTime date, IEnumerable<DateTime> period, bool isCyclic = false)
+        {
+            var result = date;
+
+            if (period?.Any() ?? false)
+            {
+                var from = period.Min();
+                var to = period.Max();
+
+                var duration = to.GetAbsDuration(from).Days + 1;
+
+                if (duration < 2)
+                {
+                    result = from;
+                }
+                else if (date < from)
+                {
+                    var distance = from.GetAbsDuration(date).Days - 1;
+
+                    result = isCyclic
+                        ? to.AddDays(distance % duration * -1)
+                        : to.AddDays(distance * -1);
+                }
+                else if (date > to)
+                {
+                    var distance = date.GetAbsDuration(to).Days - 1;
+
+                    result = isCyclic
+                        ? from.AddDays(distance % duration)
+                        : from.AddDays(distance);
+                }
+                else
+                {
+                    result = date;
+                }
+            }
+
+            return result;
+        }
+
         public static IEnumerable<DateTime> Shift(this IEnumerable<DateTime> dates, int shift)
         {
             if (dates?.Any() ?? false)
@@ -162,63 +230,6 @@ namespace DateTimeExtensions
         public static DateTime? Shift(this DateTime? value, int shift)
         {
             return value?.Shift(shift);
-        }
-
-        public static IEnumerable<DateTime> ShiftIntoCycle(this IEnumerable<DateTime> dates, IEnumerable<DateTime> cycle)
-        {
-            if (dates?.Any() ?? false)
-            {
-                foreach (var date in dates)
-                {
-                    yield return date.ShiftIntoCycle(cycle);
-                }
-            }
-        }
-
-        public static DateTime? ShiftIntoCycle(this DateTime? date, IEnumerable<DateTime> cycle)
-        {
-            var result = default(DateTime?);
-
-            if (date.HasValue)
-            {
-                result = date.Value.ShiftIntoCycle(cycle);
-            }
-
-            return result;
-        }
-
-        public static DateTime ShiftIntoCycle(this DateTime date, IEnumerable<DateTime> cycle)
-        {
-            var result = date;
-
-            if (cycle?.Any() ?? false)
-            {
-                var from = cycle.Min();
-                var to = cycle.Max();
-
-                var duration = to.GetAbsDuration(from).Days + 1;
-
-                if (duration < 2)
-                {
-                    result = from;
-                }
-                else if (date < from)
-                {
-                    var distance = from.GetAbsDuration(date).Days - 1;
-                    result = to.AddDays((distance % duration) * -1);
-                }
-                else if (date > to)
-                {
-                    var distance = date.GetAbsDuration(to).Days - 1;
-                    result = from.AddDays(distance % duration);
-                }
-                else
-                {
-                    result = date;
-                }
-            }
-
-            return result;
         }
 
         public static DateTime ToDateTime(this TimeSpan value)
