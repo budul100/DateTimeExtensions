@@ -19,7 +19,7 @@ namespace DateTimeExtensions
 
         public static IEnumerable<int> GetBits(this string bitMask, char positiveBit = PositiveBit)
         {
-            if (bitMask?.Any() ?? false)
+            if (bitMask?.Length > 0)
             {
                 var bits = bitMask.ToCharArray();
 
@@ -38,7 +38,7 @@ namespace DateTimeExtensions
         {
             var result = new StringBuilder();
 
-            if (dates?.Any() ?? false)
+            if (dates?.Count() > 0)
             {
                 for (var date = begin; date <= end; date = date.AddDays(1))
                 {
@@ -60,7 +60,7 @@ namespace DateTimeExtensions
         {
             var result = default(string);
 
-            if (dates?.Any() ?? false)
+            if (dates?.Count() > 0)
             {
                 result = dates?.ToBitmask(
                     begin: dates?.Min() ?? DateTime.MinValue,
@@ -85,7 +85,7 @@ namespace DateTimeExtensions
         {
             var result = new StringBuilder();
 
-            if (numbers?.Any() ?? false)
+            if (numbers?.Count() > 0)
             {
                 for (var number = 0; number < length; number++)
                 {
@@ -107,7 +107,7 @@ namespace DateTimeExtensions
         {
             var result = default(string);
 
-            if (bits?.Any() ?? false)
+            if (bits?.Count() > 0)
             {
                 result = bits.ToBitmask(
                     length: bits.Max(),

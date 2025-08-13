@@ -26,63 +26,6 @@ namespace DateTimeExtensions
 
         #region Public Methods
 
-        public static IEnumerable<DateTime> GetCyclic(this IEnumerable<DateTime> dates, IEnumerable<DateTime> cycle)
-        {
-            if (dates?.Any() ?? false)
-            {
-                foreach (var date in dates)
-                {
-                    yield return date.GetCyclic(cycle);
-                }
-            }
-        }
-
-        public static DateTime? GetCyclic(this DateTime? date, IEnumerable<DateTime> cycle)
-        {
-            var result = default(DateTime?);
-
-            if (date.HasValue)
-            {
-                result = date.Value.GetCyclic(cycle);
-            }
-
-            return result;
-        }
-
-        public static DateTime GetCyclic(this DateTime date, IEnumerable<DateTime> cycle)
-        {
-            var result = date;
-
-            if (cycle?.Any() ?? false)
-            {
-                var from = cycle.Min();
-                var to = cycle.Max();
-
-                var duration = to.GetAbsDuration(from).Days + 1;
-
-                if (duration < 2)
-                {
-                    result = from;
-                }
-                else if (date < from)
-                {
-                    var distance = from.GetAbsDuration(date).Days - 1;
-                    result = to.AddDays((distance % duration) * -1);
-                }
-                else if (date > to)
-                {
-                    var distance = date.GetAbsDuration(to).Days - 1;
-                    result = from.AddDays(distance % duration);
-                }
-                else
-                {
-                    result = date;
-                }
-            }
-
-            return result;
-        }
-
         public static IEnumerable<DateTime> GetDates(this DateTime from, DateTime to,
             IEnumerable<DayOfWeek> daysOfWeek = default)
         {
@@ -104,7 +47,7 @@ namespace DateTimeExtensions
             var bits = bitMask?.GetBits(
                 positiveBit: positiveBit).ToArray();
 
-            if (bits?.Any() ?? false)
+            if (bits?.Length > 0)
             {
                 if (endDate == default && startDate != default)
                 {
@@ -200,25 +143,82 @@ namespace DateTimeExtensions
             return start.AddDays(daysToAdd);
         }
 
-        public static IEnumerable<DateTime> GetShifted(this IEnumerable<DateTime> dates, int shift)
+        public static IEnumerable<DateTime> Shift(this IEnumerable<DateTime> dates, int shift)
         {
             if (dates?.Any() ?? false)
             {
                 foreach (var date in dates)
                 {
-                    yield return date.GetShifted(shift);
+                    yield return date.Shift(shift);
                 }
             }
         }
 
-        public static DateTime GetShifted(this DateTime value, int shift)
+        public static DateTime Shift(this DateTime value, int shift)
         {
             return value.AddDays(shift);
         }
 
-        public static DateTime? GetShifted(this DateTime? value, int shift)
+        public static DateTime? Shift(this DateTime? value, int shift)
         {
-            return value?.GetShifted(shift);
+            return value?.Shift(shift);
+        }
+
+        public static IEnumerable<DateTime> ShiftIntoCycle(this IEnumerable<DateTime> dates, IEnumerable<DateTime> cycle)
+        {
+            if (dates?.Any() ?? false)
+            {
+                foreach (var date in dates)
+                {
+                    yield return date.ShiftIntoCycle(cycle);
+                }
+            }
+        }
+
+        public static DateTime? ShiftIntoCycle(this DateTime? date, IEnumerable<DateTime> cycle)
+        {
+            var result = default(DateTime?);
+
+            if (date.HasValue)
+            {
+                result = date.Value.ShiftIntoCycle(cycle);
+            }
+
+            return result;
+        }
+
+        public static DateTime ShiftIntoCycle(this DateTime date, IEnumerable<DateTime> cycle)
+        {
+            var result = date;
+
+            if (cycle?.Any() ?? false)
+            {
+                var from = cycle.Min();
+                var to = cycle.Max();
+
+                var duration = to.GetAbsDuration(from).Days + 1;
+
+                if (duration < 2)
+                {
+                    result = from;
+                }
+                else if (date < from)
+                {
+                    var distance = from.GetAbsDuration(date).Days - 1;
+                    result = to.AddDays((distance % duration) * -1);
+                }
+                else if (date > to)
+                {
+                    var distance = date.GetAbsDuration(to).Days - 1;
+                    result = from.AddDays(distance % duration);
+                }
+                else
+                {
+                    result = date;
+                }
+            }
+
+            return result;
         }
 
         public static DateTime ToDateTime(this TimeSpan value)
@@ -268,27 +268,25 @@ namespace DateTimeExtensions
                     .Select(c => c.ToDateTime()?.Date)
                     .Where(d => d.HasValue).ToArray();
 
-                if (currents?.Any() ?? false)
+                if (currents?.Length == 1)
                 {
-                    if (currents.Length > 1)
+                    yield return currents.Single().Value.Date;
+                }
+                else if (currents?.Length > 1)
+                {
+                    var from = currents[0].Value;
+                    var to = currents.Last().Value;
+
+                    if (to < from)
                     {
-                        var from = currents[0].Value;
-                        var to = currents.Last().Value;
-
-                        if (to < from)
-                        {
-                            throw new FormatException(
-                                message: $"The dates order is wrong. The first date is later than the second date: {section}.");
-                        }
-
-                        for (var date = from; date <= to; date = date.AddDays(1))
-                        {
-                            yield return date.Date;
-                        }
+                        throw new FormatException(
+                            message: "The dates order is wrong. The first date is later " +
+                                $"than the second date: {section}.");
                     }
-                    else
+
+                    for (var date = from; date <= to; date = date.AddDays(1))
                     {
-                        yield return currents.Single().Value.Date;
+                        yield return date.Date;
                     }
                 }
             }
@@ -304,7 +302,7 @@ namespace DateTimeExtensions
                     .Select(c => c.ToDateTime())
                     .Where(d => d.HasValue).ToArray();
 
-                if (currents?.Any() ?? false)
+                if (currents?.Length > 0)
                 {
                     DateTime from;
                     DateTime to;
@@ -324,7 +322,8 @@ namespace DateTimeExtensions
                         if (to < from)
                         {
                             throw new FormatException(
-                                message: $"The dates order is wrong. The first date is later than the second date: {section}.");
+                                message: "The dates order is wrong. The first date is later " +
+                                    $"than the second date: {section}.");
                         }
                     }
 

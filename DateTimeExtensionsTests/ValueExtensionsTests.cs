@@ -1,6 +1,6 @@
-using DateTimeExtensions;
-using NUnit.Framework;
 using System;
+using DateTimeExtensions;
+using Xunit;
 
 namespace DateTimeExtensionsTests
 {
@@ -8,30 +8,26 @@ namespace DateTimeExtensionsTests
     {
         #region Public Methods
 
-        [Test]
+        [Fact]
         public void GetBitmaskFromDates()
         {
             var dates = new DateTime[] { DateTime.Today, DateTime.Today.AddDays(2) };
-
             var result = dates.ToBitmask(
                 positiveBit: 'Y',
                 negativeBit: 'N');
 
-            Assert.That(result == "YNY");
+            Assert.Equal("YNY", result);
         }
 
-        [Test]
+        [Fact]
         public void GetEmptyBitmask()
         {
             var dates = Array.Empty<DateTime>();
-
             var resultWoDefault = dates.ToBitmask();
-
-            Assert.That(string.IsNullOrEmpty(resultWoDefault));
+            Assert.True(string.IsNullOrEmpty(resultWoDefault));
 
             var resultWDefault = dates.ToBitmask(true);
-
-            Assert.That(resultWDefault == default);
+            Assert.True(resultWDefault == default);
         }
 
         #endregion Public Methods
