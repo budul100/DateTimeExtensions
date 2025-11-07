@@ -16,7 +16,7 @@ namespace DateTimeExtensions
 
         private static readonly string[] fromToDatesSeparators = new string[] { FromToDatesSeparator };
 
-        private static TimeSpan oneDay = new TimeSpan(
+        private static readonly TimeSpan oneDay = new TimeSpan(
             days: 1,
             hours: 0,
             minutes: 0,
@@ -260,6 +260,27 @@ namespace DateTimeExtensions
                 result: out DateTime parsed))
             {
                 result = parsed;
+            }
+
+            return result;
+        }
+
+        public static DateTime ToUnspecified(this DateTime value)
+        {
+            var result = DateTime.SpecifyKind(
+                value: value,
+                kind: DateTimeKind.Unspecified);
+
+            return result;
+        }
+
+        public static DateTime? ToUnspecified(this DateTime? value)
+        {
+            var result = default(DateTime?);
+
+            if (value.HasValue)
+            {
+                result = value.Value.ToUnspecified();
             }
 
             return result;
