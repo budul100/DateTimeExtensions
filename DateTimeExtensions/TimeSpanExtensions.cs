@@ -8,8 +8,11 @@ namespace DateTimeExtensions
     {
         #region Private Fields
 
-        private static readonly Regex timespanRegex =
-            new Regex(@"((?<h>\d{2})(?<m>\d{2})(?<s>\d{2})?)|(((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?)");
+        private const string MeridiemPattern = @"(\s*(?<ampm>[AaPp])\.?[Mm]\.?)?";
+
+        private static readonly Regex timespanRegex = new Regex(
+            @"(?:((?<h>\d{2})(?<m>\d{2})(?<s>\d{2})?)|(((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?))"
+            + MeridiemPattern);
 
         #endregion Private Fields
 
@@ -140,56 +143,59 @@ namespace DateTimeExtensions
 
         #region Private Methods
 
+        private static int? GetInt(this Match match, string groupName)
+        {
+            var group = match.Groups[groupName];
+
+            return group.Success
+                ? int.Parse(
+                    s: group.Value,
+                    provider: CultureInfo.InvariantCulture)
+                : default(int?);
+        }
+
         private static TimeSpan? ParseTime(this string input, Regex regex)
         {
-            var result = default(TimeSpan?);
-
-            if (!string.IsNullOrWhiteSpace(input))
+            if (string.IsNullOrWhiteSpace(input))
             {
-                if (regex.Match(input).Groups["h"].Success
-                    && regex.Match(input).Groups["m"].Success)
-                {
-                    var days = 0;
-
-                    if (regex.Match(input).Groups["d1"].Success)
-                    {
-                        days = int.Parse(
-                            s: regex.Match(input).Groups["d1"].Value,
-                            provider: CultureInfo.InvariantCulture);
-                    }
-                    else if (regex.Match(input).Groups["d2"].Success)
-                    {
-                        days = int.Parse(
-                            s: regex.Match(input).Groups["d2"].Value,
-                            provider: CultureInfo.InvariantCulture);
-                    }
-
-                    var hours = int.Parse(
-                        s: regex.Match(input).Groups["h"].Value,
-                        provider: CultureInfo.InvariantCulture);
-
-                    var minutes = int.Parse(
-                        s: regex.Match(input).Groups["m"].Value,
-                        provider: CultureInfo.InvariantCulture);
-
-                    var seconds = 0;
-
-                    if (regex.Match(input).Groups["s"].Success)
-                    {
-                        seconds = int.Parse(
-                            s: regex.Match(input).Groups["s"].Value,
-                            provider: CultureInfo.InvariantCulture);
-                    }
-
-                    result = new TimeSpan(
-                        days: days,
-                        hours: hours,
-                        minutes: minutes,
-                        seconds: seconds);
-                }
+                return default;
             }
 
-            return result;
+            var match = regex.Match(input);
+
+            if (!match.Groups["h"].Success
+                || !match.Groups["m"].Success)
+            {
+                return default;
+            }
+
+            var days = match.GetInt("d1")
+                ?? match.GetInt("d2")
+                ?? 0;
+
+            var hours = match.GetInt("h").Value;
+            var minutes = match.GetInt("m").Value;
+            var seconds = match.GetInt("s") ?? 0;
+
+            if (match.Groups["ampm"].Success)
+            {
+                // 12-hour clock only allows 1..12
+                if (hours < 1 || hours > 12)
+                {
+                    return default;
+                }
+
+                var isPm = char.ToUpperInvariant(match.Groups["ampm"].Value[0]) == 'P';
+
+                // 12 AM -> 0, 12 PM -> 12, 1 PM -> 13
+                hours = (hours % 12) + (isPm ? 12 : 0);
+            }
+
+            return new TimeSpan(
+                days: days,
+                hours: hours,
+                minutes: minutes,
+                seconds: seconds);
         }
 
         #endregion Private Methods

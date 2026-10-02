@@ -8,6 +8,22 @@ namespace DateTimeExtensionsTests
         #region Public Methods
 
         [Fact]
+        public void GetTimespanWithAM()
+        {
+            const string time1 = "12:02:30 AM";
+            var result1 = time1.ToTimeSpan();
+            Assert.Equal(0, result1.Value.Hours);
+            Assert.Equal(2, result1.Value.Minutes);
+            Assert.Equal(30, result1.Value.Seconds);
+
+            const string time2 = "12:02:30 PM";
+            var result2 = time2.ToTimeSpan();
+            Assert.Equal(12, result2.Value.Hours);
+            Assert.Equal(2, result2.Value.Minutes);
+            Assert.Equal(30, result2.Value.Seconds);
+        }
+
+        [Fact]
         public void GetTimespanWithComma()
         {
             const string time1 = "0,25399";
