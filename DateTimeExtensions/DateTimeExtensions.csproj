@@ -1,17 +1,43 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;netstandard2.1;net7.0;net8.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0</TargetFrameworks>
 		<AssemblyName>DateTimeExtensions</AssemblyName>
-		<AssemblyVersion>1.19.0</AssemblyVersion>
-		<FileVersion>$(AssemblyVersion)</FileVersion>
-		<Version>$(AssemblyVersion)</Version>
-		<Authors>budul</Authors>
+		<RootNamespace>DateTimeExtensions</RootNamespace>
+		<!-- AssemblyVersion and FileVersion are derived from Version -->
+		<Version>1.20.0</Version>
+	</PropertyGroup>
+
+	<!-- Package metadata -->
+	<PropertyGroup>
 		<PackageId>budul.DateTimeExtensions</PackageId>
+		<Authors>budul</Authors>
+		<Copyright>Copyright (c) budul</Copyright>
+		<Description>Extension methods for parsing, generating and transforming date and time data: date lists and periods from strings, day bitmasks, moving dates into periods and tolerant time parsing.</Description>
+		<PackageTags>datetime;timespan;date;time;parsing;bitmask;period;calendar</PackageTags>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageTags>Date conversion,Time conversion,Date handling,Time handling,Duration calculation</PackageTags>
-		<Description>Multiple extension methods to handle and calculate date and time based data</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageProjectUrl>https://github.com/budul100/DateTimeExtensions</PackageProjectUrl>
+		<PackageReleaseNotes>https://github.com/budul100/DateTimeExtensions/releases</PackageReleaseNotes>
 		<RepositoryUrl>https://github.com/budul100/DateTimeExtensions</RepositoryUrl>
-		<!-- No package by default-->
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+	<!-- Source Link and symbols (Source Link is built into the .NET 8+ SDK) -->
+	<PropertyGroup>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<!-- Deterministic paths for CI builds -->
+	<PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+	</PropertyGroup>
+
+	<!-- No package by default -->
+	<PropertyGroup>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 	</PropertyGroup>
 
@@ -19,5 +45,11 @@
 	<PropertyGroup Condition="'$(Configuration)' == 'Release'">
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	</PropertyGroup>
+
+	<!-- Files from the repository root, shown on nuget.org and shipped with the package -->
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" Visible="false" />
+		<None Include="..\LICENSE" Pack="true" PackagePath="\" Visible="false" />
+	</ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
-using DateTimeExtensions;
 using System;
+using System.Globalization;
+using DateTimeExtensions;
 using Xunit;
 
 namespace DateTimeExtensionsTests
@@ -27,14 +28,24 @@ namespace DateTimeExtensionsTests
         [Fact]
         public void GetTimespanWithComma()
         {
-            const string time1 = "0,25399";
-            var result1 = time1.ToTimeSpan();
-            Assert.Equal(6, result1.Value.Hours);
-            Assert.Equal(5, result1.Value.Minutes);
-            Assert.Equal(44, result1.Value.Seconds);
+            var previous = CultureInfo.CurrentCulture;
 
-            const string time2 = "0.25399";
-            var result2 = time2.ToTimeSpan();
+            try
+            {
+                // Comma as decimal separator requires a matching culture
+                CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+
+                var result1 = "0,25399".ToTimeSpan();
+                Assert.Equal(new TimeSpan(6, 5, 44), result1.Value
+                    .Add(TimeSpan.FromMilliseconds(-result1.Value.Milliseconds)));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = previous;
+            }
+
+            // Invariant format works independently of the current culture
+            var result2 = "0.25399".ToTimeSpan();
             Assert.Equal(6, result2.Value.Hours);
             Assert.Equal(5, result2.Value.Minutes);
             Assert.Equal(44, result2.Value.Seconds);
