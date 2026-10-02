@@ -1,4 +1,5 @@
 using DateTimeExtensions;
+using System;
 using Xunit;
 
 namespace DateTimeExtensionsTests
@@ -81,6 +82,37 @@ namespace DateTimeExtensionsTests
             Assert.Equal(22, result4.Value.Hours);
             Assert.Equal(55, result4.Value.Minutes);
             Assert.Equal(0, result4.Value.Seconds);
+        }
+
+        [Theory]
+        [InlineData("12:02:30 AM", 0, 2, 30)]
+        [InlineData("12:02:30 PM", 12, 2, 30)]
+        [InlineData("1:15 p.m.", 13, 15, 0)]
+        [InlineData("0115PM", 13, 15, 0)]
+        [InlineData("23:15", 23, 15, 0)]
+        [InlineData("1.06:00", 30, 0, 0)] // day prefix
+        [InlineData("06:00[+1]", 30, 0, 0)] // day suffix
+        public void ToTimeSpanParsesClockFormats(string input, int hours, int minutes, int seconds)
+        {
+            var expected = new TimeSpan(hours, minutes, seconds);
+
+            Assert.Equal(expected, input.ToTimeSpan());
+        }
+
+        [Theory]
+        [InlineData("13:00 PM")]
+        [InlineData("0:30 AM")]
+        [InlineData("")]
+        [InlineData("abc")]
+        public void ToTimeSpanRejectsInvalidInput(string input)
+        {
+            Assert.Null(input.ToTimeSpan());
+        }
+
+        [Fact]
+        public void ToTimeSpanWithDelimitersAndMeridiem()
+        {
+            Assert.Equal(new TimeSpan(22, 5, 18), "10.05.18 PM".ToTimeSpan("."));
         }
 
         #endregion Public Methods

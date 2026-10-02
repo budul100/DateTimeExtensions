@@ -19,16 +19,16 @@ namespace DateTimeExtensions
 
         public static IEnumerable<int> GetBits(this string bitMask, char positiveBit = PositiveBit)
         {
-            if (bitMask?.Length > 0)
+            if (bitMask == default)
             {
-                var bits = bitMask.ToCharArray();
+                yield break;
+            }
 
-                for (int i = 0; i < bits.Length; i++)
+            for (var i = 0; i < bitMask.Length; i++)
+            {
+                if (bitMask[i] == positiveBit)
                 {
-                    if (bits[i] == positiveBit)
-                    {
-                        yield return i;
-                    }
+                    yield return i;
                 }
             }
         }
@@ -36,17 +36,20 @@ namespace DateTimeExtensions
         public static string ToBitmask(this IEnumerable<DateTime> dates, DateTime begin, DateTime end,
             bool defaultOnEmpty = false, char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
+            // Compare on date level only, time components must not prevent matches
+            var days = dates != default
+                ? new HashSet<DateTime>(dates.Select(d => d.Date))
+                : default;
+
             var result = new StringBuilder();
 
-            if (dates?.Count() > 0)
+            if (days?.Count > 0)
             {
-                for (var date = begin; date <= end; date = date.AddDays(1))
+                for (var date = begin.Date; date <= end.Date; date = date.AddDays(1))
                 {
-                    var bit = dates.Contains(date)
+                    result.Append(days.Contains(date)
                         ? positiveBit
-                        : negativeBit;
-
-                    result.Append(bit);
+                        : negativeBit);
                 }
             }
 
@@ -58,42 +61,40 @@ namespace DateTimeExtensions
         public static string ToBitmask(this IEnumerable<DateTime> dates, bool defaultOnEmpty = false,
             char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
-            var result = default(string);
+            var days = dates?.Select(d => d.Date).ToArray();
 
-            if (dates?.Count() > 0)
+            if (!(days?.Length > 0))
             {
-                result = dates?.ToBitmask(
-                    begin: dates?.Min() ?? DateTime.MinValue,
-                    end: dates?.Max() ?? DateTime.MinValue,
-                    defaultOnEmpty: defaultOnEmpty,
-                    positiveBit: positiveBit,
-                    negativeBit: negativeBit);
-            }
-
-            if (result == default)
-            {
-                result = defaultOnEmpty
+                return defaultOnEmpty
                     ? default
                     : string.Empty;
             }
 
-            return result;
+            return days.ToBitmask(
+                begin: days.Min(),
+                end: days.Max(),
+                defaultOnEmpty: defaultOnEmpty,
+                positiveBit: positiveBit,
+                negativeBit: negativeBit);
         }
 
         public static string ToBitmask(this IEnumerable<int> numbers, int length, bool defaultOnEmpty = false,
             char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
+            var set = numbers != default
+                ? new HashSet<int>(numbers)
+                : default;
+
             var result = new StringBuilder();
 
-            if (numbers?.Count() > 0)
+            if (set?.Count > 0)
             {
+                // Numbers outside [0, length) are ignored
                 for (var number = 0; number < length; number++)
                 {
-                    var bit = numbers.Contains(number)
+                    result.Append(set.Contains(number)
                         ? positiveBit
-                        : negativeBit;
-
-                    result.Append(bit);
+                        : negativeBit);
                 }
             }
 
@@ -105,35 +106,33 @@ namespace DateTimeExtensions
         public static string ToBitmask(this IEnumerable<int> bits, bool defaultOnEmpty = false,
             char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
-            var result = default(string);
+            var indices = bits?.ToArray();
 
-            if (bits?.Count() > 0)
+            if (!(indices?.Length > 0))
             {
-                result = bits.ToBitmask(
-                    length: bits.Max(),
-                    defaultOnEmpty: defaultOnEmpty,
-                    positiveBit: positiveBit,
-                    negativeBit: negativeBit);
-            }
-
-            if (result == default)
-            {
-                result = defaultOnEmpty
+                return defaultOnEmpty
                     ? default
                     : string.Empty;
             }
 
-            return result;
+            // Bits are zero-based indices, so the mask needs Max + 1 positions
+            return indices.ToBitmask(
+                length: indices.Max() + 1,
+                defaultOnEmpty: defaultOnEmpty,
+                positiveBit: positiveBit,
+                negativeBit: negativeBit);
         }
 
-        public static string ToDateString(this DateTime? value, string format = "yyyy-MM-dd", CultureInfo provider = default)
+        public static string ToDateString(this DateTime? value, string format = "yyyy-MM-dd",
+            CultureInfo provider = default)
         {
             return value?.ToDateString(
                 format: format,
                 provider: provider);
         }
 
-        public static string ToDateString(this DateTime value, string format = "yyyy-MM-dd", CultureInfo provider = default)
+        public static string ToDateString(this DateTime value, string format = "yyyy-MM-dd",
+            CultureInfo provider = default)
         {
             return value.Date.ToString(
                 format: format,
@@ -142,13 +141,19 @@ namespace DateTimeExtensions
 
         public static string ToTimeString(this TimeSpan? value, string format = @"hh\:mm\:ss")
         {
-            var result = !value.HasValue
-                ? default
-                : (value?.Ticks < 0 ? "-" : default) + value?.ToString(
-                    format: format,
-                    formatProvider: CultureInfo.InvariantCulture);
+            if (!value.HasValue)
+            {
+                return default;
+            }
 
-            return result;
+            // Custom TimeSpan formats never emit a sign, so add it manually
+            var sign = value.Value < TimeSpan.Zero
+                ? "-"
+                : string.Empty;
+
+            return sign + value.Value.ToString(
+                format: format,
+                formatProvider: CultureInfo.InvariantCulture);
         }
 
         public static string ToTimeString(this TimeSpan value, string format = @"hh\:mm\:ss")
@@ -156,6 +161,28 @@ namespace DateTimeExtensions
             return ToTimeString(
                 value: (TimeSpan?)value,
                 format: format);
+        }
+
+        public static string ToTotalTimeString(this TimeSpan? value)
+        {
+            return value?.ToTotalTimeString();
+        }
+
+        public static string ToTotalTimeString(this TimeSpan value)
+        {
+            var duration = value.Duration();
+
+            var sign = value < TimeSpan.Zero
+                ? "-"
+                : string.Empty;
+
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}{1:00}:{2:00}:{3:00}",
+                sign,
+                (int)duration.TotalHours,
+                duration.Minutes,
+                duration.Seconds);
         }
 
         #endregion Public Methods

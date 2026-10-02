@@ -32,9 +32,13 @@ namespace DateTimeExtensions
             var start = from <= to ? from : to;
             var end = to >= from ? to : from;
 
+            var filter = daysOfWeek != default
+                ? new HashSet<DayOfWeek>(daysOfWeek)
+                : default;
+
             for (var date = start; date <= end; date = date.AddDays(1))
             {
-                if (!(daysOfWeek?.Any() ?? false) || daysOfWeek.Contains(date.DayOfWeek))
+                if (!(filter?.Count > 0) || filter.Contains(date.DayOfWeek))
                 {
                     yield return date;
                 }
@@ -47,40 +51,40 @@ namespace DateTimeExtensions
             var bits = bitMask?.GetBits(
                 positiveBit: positiveBit).ToArray();
 
-            if (bits?.Length > 0)
+            if (!(bits?.Length > 0))
             {
-                if (endDate == default && startDate != default)
-                {
-                    endDate = startDate.AddDays(bits.Last());
-                }
+                yield break;
+            }
 
-                do
+            // Compare on date level only, the result is date-only anyway
+            startDate = startDate.Date;
+
+            endDate = endDate == default && startDate != default
+                ? startDate.AddDays(bits.Max())
+                : endDate?.Date;
+
+            do
+            {
+                foreach (var bit in bits)
                 {
-                    foreach (var bit in bits)
+                    var result = startDate.AddDays(bit);
+
+                    if (result > endDate)
                     {
-                        var result = startDate.AddDays(bit);
-
-                        if (result > endDate)
-                            yield break;
-
-                        yield return result.Date;
+                        yield break;
                     }
 
-                    startDate = startDate.AddDays(bitMask.Length);
+                    yield return result;
                 }
-                while (startDate <= endDate);
+
+                startDate = startDate.AddDays(bitMask.Length);
             }
+            while (startDate <= endDate);
         }
 
         public static IEnumerable<DateTime> GetDates(this string dates, string separator = ",")
         {
-            if (separator?.Contains(FromToDatesSeparator) ?? false)
-            {
-                throw new ArgumentException(
-                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' " +
-                        "since it is used to split from and to values of periods.",
-                    paramName: nameof(separator));
-            }
+            ValidateSeparator(separator);
 
             var result = default(IEnumerable<DateTime>);
 
@@ -107,33 +111,22 @@ namespace DateTimeExtensions
             return start.AddDays(daysToAdd);
         }
 
-        public static IEnumerable<(DateTime, DateTime)> GetPeriods(this string dates, string separator = ",")
+        public static IEnumerable<(DateTime From, DateTime To)> GetPeriods(this string dates, string separator = ",")
         {
-            if (separator?.Contains(FromToDatesSeparator) ?? false)
+            ValidateSeparator(separator);
+
+            if (string.IsNullOrWhiteSpace(dates))
             {
-                throw new ArgumentException(
-                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' " +
-                        "since it is used to split from and to values of periods.",
-                    paramName: nameof(separator));
+                return Enumerable.Empty<(DateTime From, DateTime To)>();
             }
 
-            var result = default(IEnumerable<(DateTime, DateTime)>);
+            var sections = dates.Split(
+                separator: new[] { separator },
+                options: StringSplitOptions.RemoveEmptyEntries);
 
-            if (!string.IsNullOrWhiteSpace(dates))
-            {
-                var sectionSeparators = new string[] { separator };
-
-                var sections = dates.Split(
-                    separator: sectionSeparators,
-                    options: StringSplitOptions.RemoveEmptyEntries);
-
-                result = sections.SelectPeriods()
-                    .OrderBy(d => d.Item1)
-                    .ThenBy(d => d.Item2).ToArray();
-            }
-
-            return result
-                ?? Enumerable.Empty<(DateTime, DateTime)>();
+            // ValueTuple compares lexicographically: From first, then To
+            return sections.SelectPeriods()
+                .OrderBy(p => p).ToArray();
         }
 
         public static DateTime GetPrevious(this DateTime start, DayOfWeek day)
@@ -141,20 +134,6 @@ namespace DateTimeExtensions
             var daysToAdd = ((int)day - (int)start.DayOfWeek - 7) % 7;
 
             return start.AddDays(daysToAdd);
-        }
-
-        public static IEnumerable<DateTime> MoveInPeriod(this IEnumerable<DateTime> dates,
-            IEnumerable<DateTime> period, bool isCyclic = false)
-        {
-            if (dates?.Any() ?? false)
-            {
-                foreach (var date in dates)
-                {
-                    yield return date.MoveInPeriod(
-                        period,
-                        isCyclic);
-                }
-            }
         }
 
         public static DateTime? MoveInPeriod(this DateTime? date, IEnumerable<DateTime> period, bool isCyclic = false)
@@ -173,52 +152,80 @@ namespace DateTimeExtensions
 
         public static DateTime MoveInPeriod(this DateTime date, IEnumerable<DateTime> period, bool isCyclic = false)
         {
-            var result = date;
+            var days = period?.Select(d => d.Date).ToArray();
 
-            if (period?.Any() ?? false)
+            if (!(days?.Length > 0))
             {
-                var from = period.Min();
-                var to = period.Max();
-
-                var duration = to.GetAbsDuration(from).Days + 1;
-
-                if (duration < 2)
-                {
-                    result = from;
-                }
-                else if (date < from)
-                {
-                    var distance = from.GetAbsDuration(date).Days - 1;
-
-                    result = isCyclic
-                        ? to.AddDays(distance % duration * -1)
-                        : to.AddDays(distance * -1);
-                }
-                else if (date > to)
-                {
-                    var distance = date.GetAbsDuration(to).Days - 1;
-
-                    result = isCyclic
-                        ? from.AddDays(distance % duration)
-                        : from.AddDays(distance);
-                }
-                else
-                {
-                    result = date;
-                }
+                return date;
             }
 
-            return result;
+            var from = days.Min();
+            var to = days.Max();
+            var day = date.Date;
+
+            var duration = (to - from).Days + 1;
+
+            DateTime result;
+
+            if (duration < 2)
+            {
+                result = from;
+            }
+            else if (day < from)
+            {
+                // Non-cyclic shifts by exactly one period length, cyclic wraps into the period
+                var distance = (from - day).Days - 1;
+
+                result = isCyclic
+                    ? to.AddDays(-(distance % duration))
+                    : to.AddDays(-distance);
+            }
+            else if (day > to)
+            {
+                var distance = (day - to).Days - 1;
+
+                result = isCyclic
+                    ? from.AddDays(distance % duration)
+                    : from.AddDays(distance);
+            }
+            else
+            {
+                result = day;
+            }
+
+            // Keep the time of day of the original value
+            return result.Add(date.TimeOfDay);
+        }
+
+        public static IEnumerable<DateTime> MoveInPeriod(this IEnumerable<DateTime> dates,
+            IEnumerable<DateTime> period, bool isCyclic = false)
+        {
+            if (dates == default)
+            {
+                yield break;
+            }
+
+            // Materialize once instead of per date
+            var days = period?.ToArray();
+
+            foreach (var date in dates)
+            {
+                yield return date.MoveInPeriod(
+                    period: days,
+                    isCyclic: isCyclic);
+            }
         }
 
         public static IEnumerable<DateTime> Shift(this IEnumerable<DateTime> dates, int shift)
         {
-            if (dates?.Any() ?? false)
+            if (dates == default)
             {
-                foreach (var date in dates)
-                {
-                    yield return date.Shift(shift);
-                }
+                yield break;
+            }
+
+            foreach (var date in dates)
+            {
+                yield return date.Shift(shift);
             }
         }
 
@@ -234,9 +241,14 @@ namespace DateTimeExtensions
 
         public static DateTime ToDateTime(this TimeSpan value)
         {
-            var result = new DateTime(value.Ticks);
+            if (value < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(value),
+                    message: "Negative time spans cannot be converted to a DateTime.");
+            }
 
-            return result;
+            return new DateTime(value.Ticks);
         }
 
         public static DateTime? ToDateTime(this TimeSpan? value)
@@ -361,6 +373,17 @@ namespace DateTimeExtensions
 
                     yield return (from, to);
                 }
+            }
+        }
+
+        private static void ValidateSeparator(string separator)
+        {
+            if (separator?.Contains(FromToDatesSeparator) ?? false)
+            {
+                throw new ArgumentException(
+                    message: $"The argument splitter cannot be '{FromToDatesSeparator}' " +
+                        "since it is used to split from and to values of periods.",
+                    paramName: nameof(separator));
             }
         }
 

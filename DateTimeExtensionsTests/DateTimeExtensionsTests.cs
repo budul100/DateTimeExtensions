@@ -1,6 +1,7 @@
-using System;
-using System.Linq;
 using DateTimeExtensions;
+using System;
+using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace DateTimeExtensionsTests
@@ -67,6 +68,18 @@ namespace DateTimeExtensionsTests
         }
 
         [Fact]
+        public void BitmaskWithTimeOfDay()
+        {
+            // Start has a time component, end is a pure date on the last relevant day
+            var start = new DateTime(2020, 1, 10, 10, 0, 0);
+            var end = new DateTime(2020, 1, 17);
+
+            var dates = "1000000".GetDates(start, end).ToArray();
+
+            Assert.Equal(new[] { new DateTime(2020, 1, 10), new DateTime(2020, 1, 17) }, dates);
+        }
+
+        [Fact]
         public void CycleDatesMultiDay()
         {
             var cycle = new DateTime[] { new(2020, 1, 10), new(2020, 1, 16) };
@@ -103,6 +116,21 @@ namespace DateTimeExtensionsTests
 
             var outPeriod = new DateTime(2020, 1, 12).MoveInPeriod(cycle);
             Assert.True(outPeriod == new DateTime(2020, 1, 10));
+        }
+
+        [Theory]
+        [InlineData("2020-01-16 12:00", false, "2020-01-16 12:00")] // inside last day of period
+        [InlineData("2020-01-10 08:00", false, "2020-01-10 08:00")] // inside first day of period
+        [InlineData("2020-01-09 23:00", false, "2020-01-16 23:00")] // one hour before period
+        [InlineData("2020-01-17 01:00", false, "2020-01-10 01:00")] // one hour after period
+        [InlineData("2020-01-02 12:00", true, "2020-01-16 12:00")]
+        public void CycleDatesWithTimeOfDay(string input, bool isCyclic, string expected)
+        {
+            var cycle = new DateTime[] { new(2020, 1, 10), new(2020, 1, 16) };
+
+            var actual = Parse(input).MoveInPeriod(cycle, isCyclic);
+
+            Assert.Equal(Parse(expected), actual);
         }
 
         [Fact]
@@ -250,6 +278,14 @@ namespace DateTimeExtensionsTests
         }
 
         [Fact]
+        public void GetPeriodsWithFromToSeparator()
+        {
+            const string test = "2020-01-10;2020-01-12>2020-01-14";
+
+            Assert.Throws<ArgumentException>(() => test.GetPeriods(">"));
+        }
+
+        [Fact]
         public void GetPrevious()
         {
             Assert.Equal(DayOfWeek.Monday, DateTime.Today.GetPrevious(DayOfWeek.Monday).DayOfWeek);
@@ -291,5 +327,11 @@ namespace DateTimeExtensionsTests
         }
 
         #endregion Public Methods
+
+        #region Private Methods
+
+        private static DateTime Parse(string value) => DateTime.Parse(value, CultureInfo.InvariantCulture);
+
+        #endregion Private Methods
     }
 }

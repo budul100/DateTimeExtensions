@@ -124,7 +124,9 @@ namespace DateTimeExtensions
                         str: delimiters);
 
                     var delimitersPattern =
-                        $@"(?<h>\d{{1,2}})[{delimitersEscaped}](?<m>\d{{1,2}})([{delimitersEscaped}](?<s>\d{{1,2}}))?";
+                        $@"(?<h>\d{{1,2}})[{delimitersEscaped}](?<m>\d{{1,2}})([{delimitersEscaped}](?<s>\d{{1,2}}))?"
+                        + MeridiemPattern;
+
                     var delimitersRegex = new Regex(
                         pattern: delimitersPattern);
 
