@@ -1,5 +1,5 @@
-using DateTimeExtensions;
 using System;
+using DateTimeExtensions;
 using Xunit;
 
 namespace DateTimeExtensionsTests
@@ -38,6 +38,12 @@ namespace DateTimeExtensionsTests
         }
 
         [Fact]
+        public void GetBitmaskFromBitsIgnoresOutOfRange()
+        {
+            Assert.Equal("0101", new[] { -1, 1, 3, 9 }.ToBitmask(length: 4));
+        }
+
+        [Fact]
         public void GetBitmaskFromDates()
         {
             var dates = new DateTime[] { DateTime.Today, DateTime.Today.AddDays(2) };
@@ -46,6 +52,22 @@ namespace DateTimeExtensionsTests
                 negativeBit: 'N');
 
             Assert.Equal("YNY", result);
+        }
+
+        [Fact]
+        public void GetBitmaskFromDatesWithBorders()
+        {
+            var dates = new DateTime[] { new(2020, 1, 10), new(2020, 1, 20) };
+
+            // Dates outside the borders are ignored
+            Assert.Equal("00100", dates.ToBitmask(new DateTime(2020, 1, 8), new DateTime(2020, 1, 12)));
+
+            // Dates entirely outside still result in a mask of the requested length
+            Assert.Equal("000", dates.ToBitmask(new DateTime(2020, 2, 1), new DateTime(2020, 2, 3)));
+
+            // Reversed borders result in an empty mask
+            Assert.Equal(string.Empty, dates.ToBitmask(new DateTime(2020, 1, 12), new DateTime(2020, 1, 8)));
+            Assert.Null(dates.ToBitmask(new DateTime(2020, 1, 12), new DateTime(2020, 1, 8), defaultOnEmpty: true));
         }
 
         [Fact]
@@ -91,6 +113,14 @@ namespace DateTimeExtensionsTests
 
             Assert.Equal("30:00:00", new TimeSpan(1, 6, 0, 0).ToTotalTimeString());
             Assert.Equal("-25:10:00", new TimeSpan(-1, -1, -10, 0).ToTotalTimeString());
+        }
+
+        [Fact]
+        public void ToTimeStringWithStandardFormatHasSingleSign()
+        {
+            // Standard formats emit the sign themselves
+            Assert.Equal("-00:30:00", TimeSpan.FromMinutes(-30).ToTimeString("c"));
+            Assert.Equal("00:30:00", TimeSpan.FromMinutes(30).ToTimeString("c"));
         }
 
         #endregion Public Methods

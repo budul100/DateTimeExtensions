@@ -28,6 +28,11 @@ namespace DateTimeExtensionsTests
         [Fact]
         public void GetTimespanWithComma()
         {
+            // Culture data is missing in invariant globalization mode (e.g. slim containers)
+            Assert.SkipWhen(
+                IsInvariantGlobalization(),
+                "A de-DE culture is not available in invariant globalization mode.");
+
             var previous = CultureInfo.CurrentCulture;
 
             try
@@ -101,6 +106,9 @@ namespace DateTimeExtensionsTests
         [InlineData("1:15 p.m.", 13, 15, 0)]
         [InlineData("0115PM", 13, 15, 0)]
         [InlineData("23:15", 23, 15, 0)]
+        [InlineData(" 13:20 ", 13, 20, 0)] // surrounding whitespace
+        [InlineData("25:30", 25, 30, 0)] // service days beyond midnight
+        [InlineData("1.5", 36, 0, 0)] // fraction of a day
         [InlineData("1.06:00", 30, 0, 0)] // day prefix
         [InlineData("06:00[+1]", 30, 0, 0)] // day suffix
         public void ToTimeSpanParsesClockFormats(string input, int hours, int minutes, int seconds)
@@ -115,6 +123,17 @@ namespace DateTimeExtensionsTests
         [InlineData("0:30 AM")]
         [InlineData("")]
         [InlineData("abc")]
+        [InlineData("2020-01-10")] // no embedded time
+        [InlineData("123456789")] // too long
+        [InlineData("1234567")] // too long
+        [InlineData("12:75")] // minutes out of range
+        [InlineData("12:30:61")] // seconds out of range
+        [InlineData("NaN")]
+        [InlineData("Infinity")]
+        [InlineData("-0.25")]
+        [InlineData("-1000000")]
+        [InlineData("3000000.5")] // beyond the OLE Automation range
+        [InlineData("١٢:٣٠")] // non ASCII digits
         public void ToTimeSpanRejectsInvalidInput(string input)
         {
             Assert.Null(input.ToTimeSpan());
@@ -126,6 +145,33 @@ namespace DateTimeExtensionsTests
             Assert.Equal(new TimeSpan(22, 5, 18), "10.05.18 PM".ToTimeSpan("."));
         }
 
+        [Fact]
+        public void ToTimeSpanWithDelimitersIsNoDayFraction()
+        {
+            // Without delimiters "10.05" would be a number, with them it is a time
+            Assert.Equal(new TimeSpan(10, 5, 0), "10.05".ToTimeSpan("."));
+        }
+
+        [Fact]
+        public void ToTimeSpanWithSpecialCharactersInDelimiters()
+        {
+            // A '-' inside the delimiters must not form a character range
+            Assert.Equal(new TimeSpan(10, 5, 0), "10-05".ToTimeSpan(".-:"));
+            Assert.Null("1005".ToTimeSpan(".-:"));
+        }
+
         #endregion Public Methods
+
+        #region Private Methods
+
+        private static bool IsInvariantGlobalization()
+        {
+            return AppContext.TryGetSwitch(
+                switchName: "System.Globalization.Invariant",
+                isEnabled: out var enabled)
+                && enabled;
+        }
+
+        #endregion Private Methods
     }
 }

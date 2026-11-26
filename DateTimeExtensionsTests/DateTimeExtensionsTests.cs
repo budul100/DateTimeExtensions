@@ -1,7 +1,7 @@
-using DateTimeExtensions;
 using System;
 using System.Globalization;
 using System.Linq;
+using DateTimeExtensions;
 using Xunit;
 
 namespace DateTimeExtensionsTests
@@ -16,29 +16,32 @@ namespace DateTimeExtensionsTests
             const string singleNoneBit = "F";
             const string singleBit = "T";
 
-            var startOnlyNone = singleNoneBit.GetDates(DateTime.Now).ToArray();
+            // Fixed start with a time of day, the result is date-only
+            var start = new DateTime(2020, 1, 10, 15, 30, 0);
+
+            var startOnlyNone = singleNoneBit.GetDates(start).ToArray();
 
             Assert.Empty(startOnlyNone);
 
             var startAndEmptyEndNone = singleNoneBit.GetDates(
-                startDate: DateTime.Now,
+                startDate: start,
                 endDate: default,
                 positiveBit: singleBit[0]).ToArray();
 
             Assert.Empty(startAndEmptyEndNone);
 
             var startOnly = singleBit.GetDates(
-                startDate: DateTime.Now,
+                startDate: start,
                 positiveBit: singleBit[0]).ToArray();
 
-            Assert.True(startOnly.Single() == DateTime.Today);
+            Assert.Equal(start.Date, startOnly.Single());
 
             var startAndEmptyEnd = singleBit.GetDates(
-                startDate: DateTime.Now,
+                startDate: start,
                 endDate: default,
                 positiveBit: singleBit[0]).ToArray();
 
-            Assert.True(startAndEmptyEnd.Single() == DateTime.Today);
+            Assert.Equal(start.Date, startAndEmptyEnd.Single());
         }
 
         [Fact]
@@ -46,7 +49,9 @@ namespace DateTimeExtensionsTests
         {
             const string bits = "1000000";
 
-            var dates = bits.GetDates(DateTime.Now, DateTime.Now.AddDays(13)).ToArray();
+            var start = new DateTime(2020, 1, 6);
+
+            var dates = bits.GetDates(start, start.AddDays(13)).ToArray();
 
             Assert.Equal(2, dates.Length);
         }
@@ -54,15 +59,17 @@ namespace DateTimeExtensionsTests
         [Fact]
         public void BitmaskWithoutEnd()
         {
+            var start = new DateTime(2020, 1, 6);
+
             const string bits7 = "1111111";
 
-            var dates7 = bits7.GetDates(DateTime.Now, default).ToArray();
+            var dates7 = bits7.GetDates(start, default).ToArray();
 
             Assert.Equal(7, dates7.Length);
 
             const string bits1 = "0001000";
 
-            var dates1 = bits1.GetDates(DateTime.Now, default).ToArray();
+            var dates1 = bits1.GetDates(start, default).ToArray();
 
             Assert.Single(dates1);
         }
@@ -118,6 +125,40 @@ namespace DateTimeExtensionsTests
             Assert.True(outPeriod == new DateTime(2020, 1, 10));
         }
 
+        [Fact]
+        public void CycleDatesKeepKindOfInput()
+        {
+            var cycle = new DateTime[] { new(2020, 1, 10), new(2020, 1, 16) };
+
+            var utc = new DateTime(2020, 1, 24, 10, 0, 0, DateTimeKind.Utc);
+
+            var moved = utc.MoveInPeriod(cycle);
+
+            Assert.Equal(new DateTime(2020, 1, 17, 10, 0, 0), moved);
+            Assert.Equal(DateTimeKind.Utc, moved.Kind);
+        }
+
+        [Fact]
+        public void CycleDatesOfSequence()
+        {
+            var cycle = new DateTime[] { new(2020, 1, 10), new(2020, 1, 16) };
+
+            var dates = new DateTime[] { new(2020, 1, 2), new(2020, 1, 12), new(2020, 1, 24) };
+
+            var moved = dates.MoveInPeriod(cycle, true).ToArray();
+
+            Assert.Equal(new DateTime[] { new(2020, 1, 16), new(2020, 1, 12), new(2020, 1, 10) }, moved);
+        }
+
+        [Fact]
+        public void CycleDatesOfSequenceWithoutPeriod()
+        {
+            var dates = new DateTime[] { new(2020, 1, 2), new(2020, 1, 12) };
+
+            Assert.Equal(dates, dates.MoveInPeriod(period: null).ToArray());
+            Assert.Equal(dates, dates.MoveInPeriod(Array.Empty<DateTime>()).ToArray());
+        }
+
         [Theory]
         [InlineData("2020-01-16 12:00", false, "2020-01-16 12:00")] // inside last day of period
         [InlineData("2020-01-10 08:00", false, "2020-01-10 08:00")] // inside first day of period
@@ -154,6 +195,16 @@ namespace DateTimeExtensionsTests
         }
 
         [Fact]
+        public void GetDatesFromOverlappingSections()
+        {
+            const string test = "2020-01-10,2020-01-10,2020-01-09>2020-01-10";
+
+            var dates = test.GetDates().ToArray();
+
+            Assert.Equal(new DateTime[] { new(2020, 1, 9), new(2020, 1, 10) }, dates);
+        }
+
+        [Fact]
         public void GetDatesFromPeriodsString()
         {
             const string test = "2020-01-10,xxx,2020-01-12 18:00>2020-01-14 10:00,,2020-01-16";
@@ -178,14 +229,16 @@ namespace DateTimeExtensionsTests
         {
             var daysOfWeek = new DayOfWeek[] { DayOfWeek.Friday, DayOfWeek.Tuesday };
 
-            var from = DateTime.Now.AddDays(-6);
-            var to = DateTime.Now.AddDays(7);
+            var from = new DateTime(2020, 1, 1);
+            var to = new DateTime(2020, 1, 14);
 
             var result = from.GetDates(
                 to: to,
                 daysOfWeek: daysOfWeek).ToArray();
 
-            Assert.Equal(4, result.Length);
+            Assert.Equal(
+                new DateTime[] { new(2020, 1, 3), new(2020, 1, 7), new(2020, 1, 10), new(2020, 1, 14) },
+                result);
         }
 
         [Fact]
@@ -193,12 +246,43 @@ namespace DateTimeExtensionsTests
         {
             var daysOfWeek = Array.Empty<DayOfWeek>();
 
-            var from = DateTime.Now.AddDays(-5);
-            var to = DateTime.Now.AddDays(5);
+            var from = new DateTime(2020, 1, 1);
+            var to = new DateTime(2020, 1, 11);
 
             var result = from.GetDates(to, daysOfWeek).ToArray();
 
             Assert.Equal(11, result.Length);
+        }
+
+        [Fact]
+        public void GetDatesWithReversedBorders()
+        {
+            var result = new DateTime(2020, 1, 12).GetDates(new DateTime(2020, 1, 10)).ToArray();
+
+            Assert.Equal(new DateTime[] { new(2020, 1, 10), new(2020, 1, 11), new(2020, 1, 12) }, result);
+        }
+
+        [Fact]
+        public void GetDatesWithTimeOfDay()
+        {
+            // The last day must not get lost because its time of day is earlier than the start's
+            var from = new DateTime(2020, 1, 10, 10, 0, 0);
+            var to = new DateTime(2020, 1, 12, 8, 0, 0);
+
+            var result = from.GetDates(to).ToArray();
+
+            Assert.Equal(new DateTime[] { new(2020, 1, 10), new(2020, 1, 11), new(2020, 1, 12) }, result);
+        }
+
+        [Fact]
+        public void GetDatesUpToMaxValueDoesNotOverflow()
+        {
+            var to = DateTime.MaxValue;
+            var from = to.Date.AddDays(-1);
+
+            var result = from.GetDates(to).ToArray();
+
+            Assert.Equal(2, result.Length);
         }
 
         [Fact]
@@ -227,6 +311,18 @@ namespace DateTimeExtensionsTests
             Assert.Equal(5, dates.Count());
         }
 
+        [Theory]
+        [InlineData((string)null)]
+        [InlineData("")]
+        public void GetDatesWithMissingSeparator(string separator)
+        {
+            // Otherwise string.Split would fall back to whitespace and break values with a time of day
+            const string test = "2020-01-10";
+
+            Assert.ThrowsAny<ArgumentException>(() => test.GetDates(separator));
+            Assert.ThrowsAny<ArgumentException>(() => test.GetPeriods(separator));
+        }
+
         [Fact]
         public void GetNext()
         {
@@ -250,6 +346,16 @@ namespace DateTimeExtensionsTests
 
             Assert.Equal(DayOfWeek.Sunday, DateTime.Today.GetNext(DayOfWeek.Sunday).DayOfWeek);
             Assert.True(DateTime.Today.GetNext(DayOfWeek.Sunday) >= DateTime.Today);
+        }
+
+        // 2020-01-01 is a Wednesday
+        [Theory]
+        [InlineData(DayOfWeek.Wednesday, "2020-01-01")]
+        [InlineData(DayOfWeek.Friday, "2020-01-03")]
+        [InlineData(DayOfWeek.Tuesday, "2020-01-07")]
+        public void GetNextFromFixedDate(DayOfWeek day, string expected)
+        {
+            Assert.Equal(Parse(expected), new DateTime(2020, 1, 1).GetNext(day));
         }
 
         [Fact]
@@ -286,6 +392,16 @@ namespace DateTimeExtensionsTests
         }
 
         [Fact]
+        public void GetPeriodsWithSingleValueWithTimeOfDay()
+        {
+            // A single value covers the rest of its own day and must not spill into the next day
+            var period = "2020-01-12 18:00".GetPeriods().Single();
+
+            Assert.Equal(new DateTime(2020, 1, 12, 18, 0, 0), period.From);
+            Assert.Equal(new DateTime(2020, 1, 13).AddTicks(-1), period.To);
+        }
+
+        [Fact]
         public void GetPrevious()
         {
             Assert.Equal(DayOfWeek.Monday, DateTime.Today.GetPrevious(DayOfWeek.Monday).DayOfWeek);
@@ -308,6 +424,16 @@ namespace DateTimeExtensionsTests
 
             Assert.Equal(DayOfWeek.Sunday, DateTime.Today.GetPrevious(DayOfWeek.Sunday).DayOfWeek);
             Assert.True(DateTime.Today.GetPrevious(DayOfWeek.Sunday) <= DateTime.Today);
+        }
+
+        // 2020-01-01 is a Wednesday
+        [Theory]
+        [InlineData(DayOfWeek.Wednesday, "2020-01-01")]
+        [InlineData(DayOfWeek.Monday, "2019-12-30")]
+        [InlineData(DayOfWeek.Thursday, "2019-12-26")]
+        public void GetPreviousFromFixedDate(DayOfWeek day, string expected)
+        {
+            Assert.Equal(Parse(expected), new DateTime(2020, 1, 1).GetPrevious(day));
         }
 
         [Fact]

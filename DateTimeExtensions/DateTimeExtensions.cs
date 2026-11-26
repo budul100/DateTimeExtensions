@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,16 +29,20 @@ namespace DateTimeExtensions
         public static IEnumerable<DateTime> GetDates(this DateTime from, DateTime to,
             IEnumerable<DayOfWeek> daysOfWeek = default)
         {
-            var start = from <= to ? from : to;
-            var end = to >= from ? to : from;
+            // Compare on date level only, consistent with the bitmask overload
+            var start = from <= to ? from.Date : to.Date;
+            var end = from <= to ? to.Date : from.Date;
 
-            var filter = daysOfWeek != default
-                ? new HashSet<DayOfWeek>(daysOfWeek)
-                : default;
+            var allowed = GetDayFlags(daysOfWeek);
 
-            for (var date = start; date <= end; date = date.AddDays(1))
+            // Counting instead of comparing avoids an overflow when end is DateTime.MaxValue
+            var count = (end - start).Days;
+
+            for (var offset = 0; offset <= count; offset++)
             {
-                if (!(filter?.Count > 0) || filter.Contains(date.DayOfWeek))
+                var date = start.AddDays(offset);
+
+                if (allowed == default || allowed[(int)date.DayOfWeek])
                 {
                     yield return date;
                 }
@@ -96,8 +100,9 @@ namespace DateTimeExtensions
                     separator: sectionSeparators,
                     options: StringSplitOptions.RemoveEmptyEntries);
 
+                // Overlapping sections must not produce duplicates
                 result = sections.SelectDates()
-                    .OrderBy(d => d).ToArray();
+                    .Distinct().OrderBy(d => d).ToArray();
             }
 
             return result
@@ -152,49 +157,19 @@ namespace DateTimeExtensions
 
         public static DateTime MoveInPeriod(this DateTime date, IEnumerable<DateTime> period, bool isCyclic = false)
         {
-            var days = period?.Select(d => d.Date).ToArray();
-
-            if (!(days?.Length > 0))
+            if (!TryGetPeriodBounds(
+                period: period,
+                periodStart: out var periodStart,
+                periodEnd: out var periodEnd))
             {
                 return date;
             }
 
-            var from = days.Min();
-            var to = days.Max();
-            var day = date.Date;
-
-            var duration = (to - from).Days + 1;
-
-            DateTime result;
-
-            if (duration < 2)
-            {
-                result = from;
-            }
-            else if (day < from)
-            {
-                // Non-cyclic shifts by exactly one period length, cyclic wraps into the period
-                var distance = (from - day).Days - 1;
-
-                result = isCyclic
-                    ? to.AddDays(-(distance % duration))
-                    : to.AddDays(-distance);
-            }
-            else if (day > to)
-            {
-                var distance = (day - to).Days - 1;
-
-                result = isCyclic
-                    ? from.AddDays(distance % duration)
-                    : from.AddDays(distance);
-            }
-            else
-            {
-                result = day;
-            }
-
-            // Keep the time of day of the original value
-            return result.Add(date.TimeOfDay);
+            return MoveIntoBounds(
+                date: date,
+                periodStart: periodStart,
+                periodEnd: periodEnd,
+                isCyclic: isCyclic);
         }
 
         public static IEnumerable<DateTime> MoveInPeriod(this IEnumerable<DateTime> dates,
@@ -205,14 +180,21 @@ namespace DateTimeExtensions
                 yield break;
             }
 
-            // Materialize once instead of per date
-            var days = period?.ToArray();
+            // The bounds are determined once instead of per date
+            var hasPeriod = TryGetPeriodBounds(
+                period: period,
+                periodStart: out var periodStart,
+                periodEnd: out var periodEnd);
 
             foreach (var date in dates)
             {
-                yield return date.MoveInPeriod(
-                    period: days,
-                    isCyclic: isCyclic);
+                yield return hasPeriod
+                    ? MoveIntoBounds(
+                        date: date,
+                        periodStart: periodStart,
+                        periodEnd: periodEnd,
+                        isCyclic: isCyclic)
+                    : date;
             }
         }
 
@@ -302,6 +284,76 @@ namespace DateTimeExtensions
 
         #region Private Methods
 
+        private static bool[] GetDayFlags(IEnumerable<DayOfWeek> daysOfWeek)
+        {
+            var result = default(bool[]);
+
+            if (daysOfWeek != default)
+            {
+                var flags = new bool[7];
+                var hasFlags = false;
+
+                foreach (var day in daysOfWeek)
+                {
+                    var index = (int)day;
+
+                    if (index >= 0 && index < flags.Length)
+                    {
+                        flags[index] = true;
+                        hasFlags = true;
+                    }
+                }
+
+                // No (valid) day means no filter
+                if (hasFlags)
+                {
+                    result = flags;
+                }
+            }
+
+            return result;
+        }
+
+        private static DateTime MoveIntoBounds(DateTime date, DateTime periodStart, DateTime periodEnd, bool isCyclic)
+        {
+            var day = date.Date;
+
+            var duration = (periodEnd - periodStart).Days + 1;
+
+            DateTime result;
+
+            if (duration < 2)
+            {
+                result = periodStart;
+            }
+            else if (day < periodStart)
+            {
+                // Non-cyclic shifts by exactly one period length, cyclic wraps into the period
+                var distance = (periodStart - day).Days - 1;
+
+                result = isCyclic
+                    ? periodEnd.AddDays(-(distance % duration))
+                    : periodEnd.AddDays(-distance);
+            }
+            else if (day > periodEnd)
+            {
+                var distance = (day - periodEnd).Days - 1;
+
+                result = isCyclic
+                    ? periodStart.AddDays(distance % duration)
+                    : periodStart.AddDays(distance);
+            }
+            else
+            {
+                result = day;
+            }
+
+            // Keep the time of day and the kind of the original value
+            return DateTime.SpecifyKind(
+                value: result.Add(date.TimeOfDay),
+                kind: date.Kind);
+        }
+
         private static IEnumerable<DateTime> SelectDates(this IEnumerable<string> sections)
         {
             foreach (var section in sections)
@@ -353,12 +405,15 @@ namespace DateTimeExtensions
 
                     if (currents.Length == 1)
                     {
+                        // A single value covers the rest of its own day, also with a time of day
                         from = currents.Single().Value;
-                        to = from.Add(oneDay);
+                        to = from.Date.Add(oneDay);
                     }
                     else
                     {
                         from = currents[0].Value;
+
+                        // An end value at 00:00 is treated as a pure date and covers the whole day
                         to = currents.Last().Value.TimeOfDay == TimeSpan.Zero
                             ? currents.Last().Value.Add(oneDay)
                             : currents.Last().Value;
@@ -376,9 +431,43 @@ namespace DateTimeExtensions
             }
         }
 
+        private static bool TryGetPeriodBounds(IEnumerable<DateTime> period, out DateTime periodStart,
+            out DateTime periodEnd)
+        {
+            periodStart = DateTime.MaxValue;
+            periodEnd = DateTime.MinValue;
+
+            var found = false;
+
+            if (period != default)
+            {
+                foreach (var current in period)
+                {
+                    var day = current.Date;
+
+                    if (day < periodStart)
+                    {
+                        periodStart = day;
+                    }
+
+                    if (day > periodEnd)
+                    {
+                        periodEnd = day;
+                    }
+
+                    found = true;
+                }
+            }
+
+            return found;
+        }
+
         private static void ValidateSeparator(string separator)
         {
-            if (separator?.Contains(FromToDatesSeparator) ?? false)
+            // A null or empty separator would make string.Split fall back to whitespace
+            ArgumentException.ThrowIfNullOrEmpty(separator);
+
+            if (separator.Contains(FromToDatesSeparator))
             {
                 throw new ArgumentException(
                     message: $"The argument splitter cannot be '{FromToDatesSeparator}' " +

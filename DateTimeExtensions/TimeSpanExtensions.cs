@@ -1,18 +1,22 @@
-﻿using System;
+using System;
+using System.Collections.Concurrent;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace DateTimeExtensions
 {
-    public static class TimeSpanExtensions
+    public static partial class TimeSpanExtensions
     {
         #region Private Fields
 
-        private const string MeridiemPattern = @"(\s*(?<ampm>[AaPp])\.?[Mm]\.?)?";
+        // Same optional AM/PM suffix as in the generated clock regex below
+        private const string MeridiemPattern = @"(?:\s*(?<ampm>[AaPp])\.?[Mm]\.?)?";
 
-        private static readonly Regex timespanRegex = new Regex(
-            @"(?:((?<h>\d{2})(?<m>\d{2})(?<s>\d{2})?)|(((?<d1>\d{1,2})\.)?(?<h>\d{1,2})\:(?<m>\d{1,2})(\:(?<s>\d{1,2}))?(\[\+(?<d2>\d)\])?))"
-            + MeridiemPattern);
+        // Exclusive upper limit of valid OLE Automation dates
+        private const double OleAutomationMaxDays = 2958466d;
+
+        private static readonly ConcurrentDictionary<string, Regex> delimitersRegexes = new();
 
         #endregion Private Fields
 
@@ -20,8 +24,7 @@ namespace DateTimeExtensions
 
         public static TimeSpan? AddDays(this TimeSpan? time, int days)
         {
-            return time?.AddDays(days)
-                ?? default(TimeSpan?);
+            return time?.AddDays(days);
         }
 
         public static TimeSpan AddDays(this TimeSpan time, int days)
@@ -94,56 +97,50 @@ namespace DateTimeExtensions
 
         public static TimeSpan? ToTimeSpan(this string input, string delimiters = default)
         {
-            if (!string.IsNullOrWhiteSpace(input))
+            if (string.IsNullOrWhiteSpace(input))
             {
-                if (double.TryParse(
-                    s: input,
-                    style: NumberStyles.Any,
-                    provider: CultureInfo.CurrentCulture,
-                    result: out double current)
-                    && current.ToString(CultureInfo.CurrentCulture) == input.Trim()
-                    && (current < 1 || current % 1 != 0))
-                {
-                    return DateTime.FromOADate(current) - DateTime.FromOADate(0);
-                }
-
-                if (double.TryParse(
-                    s: input,
-                    style: NumberStyles.Any,
-                    provider: CultureInfo.InvariantCulture,
-                    result: out double invariant)
-                    && invariant.ToString(CultureInfo.InvariantCulture) == input.Trim()
-                    && (invariant < 1 || invariant % 1 != 0))
-                {
-                    return DateTime.FromOADate(invariant) - DateTime.FromOADate(0);
-                }
-
-                if (!string.IsNullOrWhiteSpace(delimiters))
-                {
-                    var delimitersEscaped = Regex.Escape(
-                        str: delimiters);
-
-                    var delimitersPattern =
-                        $@"(?<h>\d{{1,2}})[{delimitersEscaped}](?<m>\d{{1,2}})([{delimitersEscaped}](?<s>\d{{1,2}}))?"
-                        + MeridiemPattern;
-
-                    var delimitersRegex = new Regex(
-                        pattern: delimitersPattern);
-
-                    return input.ParseTime(
-                        regex: delimitersRegex);
-                }
-
-                return input.ParseTime(
-                    regex: timespanRegex);
+                return default;
             }
 
-            return default;
+            // Explicit delimiters always win, so "10.05" is a time and not a fraction of a day
+            if (!string.IsNullOrWhiteSpace(delimiters))
+            {
+                return input.ParseTime(
+                    regex: delimitersRegexes.GetOrAdd(
+                        key: delimiters,
+                        valueFactory: CreateDelimitersRegex));
+            }
+
+            return input.ParseDayFraction()
+                ?? input.ParseTime(
+                    regex: ClockRegex());
         }
 
         #endregion Public Methods
 
         #region Private Methods
+
+        // Anchored on purpose: the whole input must be a time. Only ASCII digits are accepted,
+        // since \d also matches other Unicode digits which int.Parse cannot handle.
+        [GeneratedRegex(
+            @"^\s*(?:(?<h>[0-9]{2})(?<m>[0-9]{2})(?<s>[0-9]{2})?|(?:(?<d1>[0-9]{1,2})\.)?(?<h>[0-9]{1,2}):(?<m>[0-9]{1,2})(?::(?<s>[0-9]{1,2}))?(?:\[\+(?<d2>[0-9])\])?)(?:\s*(?<ampm>[AaPp])\.?[Mm]\.?)?\s*$")]
+        private static partial Regex ClockRegex();
+
+        private static Regex CreateDelimitersRegex(string delimiters)
+        {
+            // An alternation instead of a character class, since Regex.Escape does not escape '-' and ']'
+            var delimiter = "(?:"
+                + string.Join("|", delimiters.Distinct().Select(d => Regex.Escape(d.ToString())))
+                + ")";
+
+            var pattern = @"^\s*(?<h>[0-9]{1,2})" + delimiter
+                + @"(?<m>[0-9]{1,2})(?:" + delimiter + @"(?<s>[0-9]{1,2}))?"
+                + MeridiemPattern
+                + @"\s*$";
+
+            return new Regex(
+                pattern: pattern);
+        }
 
         private static int? GetInt(this Match match, string groupName)
         {
@@ -156,6 +153,40 @@ namespace DateTimeExtensions
                 : default(int?);
         }
 
+        private static TimeSpan? ParseDayFraction(this string input)
+        {
+            // Fractions of a day (OLE Automation date) never contain a colon
+            if (input.Contains(':'))
+            {
+                return default;
+            }
+
+            var trimmed = input.Trim();
+
+            return trimmed.ParseDayFraction(CultureInfo.CurrentCulture)
+                ?? trimmed.ParseDayFraction(CultureInfo.InvariantCulture);
+        }
+
+        private static TimeSpan? ParseDayFraction(this string input, CultureInfo culture)
+        {
+            // The round trip check rejects inputs which are not a plain number in this culture
+            if (double.TryParse(
+                s: input,
+                style: NumberStyles.Any,
+                provider: culture,
+                result: out var value)
+                && double.IsFinite(value)
+                && value >= 0
+                && value < OleAutomationMaxDays
+                && value.ToString(culture) == input
+                && (value < 1 || value % 1 != 0))
+            {
+                return DateTime.FromOADate(value) - DateTime.FromOADate(0);
+            }
+
+            return default;
+        }
+
         private static TimeSpan? ParseTime(this string input, Regex regex)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -165,7 +196,8 @@ namespace DateTimeExtensions
 
             var match = regex.Match(input);
 
-            if (!match.Groups["h"].Success
+            if (!match.Success
+                || !match.Groups["h"].Success
                 || !match.Groups["m"].Success)
             {
                 return default;
@@ -178,6 +210,12 @@ namespace DateTimeExtensions
             var hours = match.GetInt("h").Value;
             var minutes = match.GetInt("m").Value;
             var seconds = match.GetInt("s") ?? 0;
+
+            // Hours stay open on purpose, they may exceed 24 for services beyond midnight
+            if (minutes > 59 || seconds > 59)
+            {
+                return default;
+            }
 
             if (match.Groups["ampm"].Success)
             {

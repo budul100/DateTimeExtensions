@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace DateTimeExtensions
 {
@@ -37,42 +36,68 @@ namespace DateTimeExtensions
             bool defaultOnEmpty = false, char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
             // Compare on date level only, time components must not prevent matches
-            var days = dates != default
-                ? new HashSet<DateTime>(dates.Select(d => d.Date))
-                : default;
+            var first = begin.Date;
+            var length = (end.Date - first).Days + 1;
 
-            var result = new StringBuilder();
+            var buffer = default(char[]);
 
-            if (days?.Count > 0)
+            if (dates != default && length > 0)
             {
-                for (var date = begin.Date; date <= end.Date; date = date.AddDays(1))
+                // A single pass over the dates, duplicates and order do not matter
+                foreach (var date in dates)
                 {
-                    result.Append(days.Contains(date)
-                        ? positiveBit
-                        : negativeBit);
+                    if (buffer == default)
+                    {
+                        buffer = CreateBuffer(
+                            length: length,
+                            negativeBit: negativeBit);
+                    }
+
+                    var index = (date.Date - first).Days;
+
+                    if (index >= 0 && index < length)
+                    {
+                        buffer[index] = positiveBit;
+                    }
                 }
             }
 
-            return defaultOnEmpty && result.Length == 0
-                ? default
-                : result.ToString();
+            return GetResult(
+                buffer: buffer,
+                defaultOnEmpty: defaultOnEmpty);
         }
 
         public static string ToBitmask(this IEnumerable<DateTime> dates, bool defaultOnEmpty = false,
             char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
-            var days = dates?.Select(d => d.Date).ToArray();
+            var days = dates?.ToArray();
 
             if (!(days?.Length > 0))
             {
-                return defaultOnEmpty
-                    ? default
-                    : string.Empty;
+                return GetResult(
+                    buffer: default,
+                    defaultOnEmpty: defaultOnEmpty);
+            }
+
+            var begin = days[0];
+            var end = days[0];
+
+            foreach (var day in days)
+            {
+                if (day < begin)
+                {
+                    begin = day;
+                }
+
+                if (day > end)
+                {
+                    end = day;
+                }
             }
 
             return days.ToBitmask(
-                begin: days.Min(),
-                end: days.Max(),
+                begin: begin,
+                end: end,
                 defaultOnEmpty: defaultOnEmpty,
                 positiveBit: positiveBit,
                 negativeBit: negativeBit);
@@ -81,26 +106,30 @@ namespace DateTimeExtensions
         public static string ToBitmask(this IEnumerable<int> numbers, int length, bool defaultOnEmpty = false,
             char positiveBit = PositiveBit, char negativeBit = NegativeBit)
         {
-            var set = numbers != default
-                ? new HashSet<int>(numbers)
-                : default;
+            var buffer = default(char[]);
 
-            var result = new StringBuilder();
-
-            if (set?.Count > 0)
+            if (numbers != default && length > 0)
             {
-                // Numbers outside [0, length) are ignored
-                for (var number = 0; number < length; number++)
+                foreach (var number in numbers)
                 {
-                    result.Append(set.Contains(number)
-                        ? positiveBit
-                        : negativeBit);
+                    if (buffer == default)
+                    {
+                        buffer = CreateBuffer(
+                            length: length,
+                            negativeBit: negativeBit);
+                    }
+
+                    // Numbers outside [0, length) are ignored
+                    if (number >= 0 && number < length)
+                    {
+                        buffer[number] = positiveBit;
+                    }
                 }
             }
 
-            return defaultOnEmpty && result.Length == 0
-                ? default
-                : result.ToString();
+            return GetResult(
+                buffer: buffer,
+                defaultOnEmpty: defaultOnEmpty);
         }
 
         public static string ToBitmask(this IEnumerable<int> bits, bool defaultOnEmpty = false,
@@ -146,8 +175,11 @@ namespace DateTimeExtensions
                 return default;
             }
 
-            // Custom TimeSpan formats never emit a sign, so add it manually
-            var sign = value.Value < TimeSpan.Zero
+            // Custom TimeSpan formats never emit a sign, so add it manually. Standard formats
+            // ("c", "g", "G") are a single character and already emit it themselves.
+            var isCustomFormat = format?.Length > 1;
+
+            var sign = isCustomFormat && value.Value < TimeSpan.Zero
                 ? "-"
                 : string.Empty;
 
@@ -186,5 +218,32 @@ namespace DateTimeExtensions
         }
 
         #endregion Public Methods
+
+        #region Private Methods
+
+        private static char[] CreateBuffer(int length, char negativeBit)
+        {
+            var result = new char[length];
+
+            Array.Fill(
+                array: result,
+                value: negativeBit);
+
+            return result;
+        }
+
+        private static string GetResult(char[] buffer, bool defaultOnEmpty)
+        {
+            if (buffer != default)
+            {
+                return new string(buffer);
+            }
+
+            return defaultOnEmpty
+                ? default
+                : string.Empty;
+        }
+
+        #endregion Private Methods
     }
 }
