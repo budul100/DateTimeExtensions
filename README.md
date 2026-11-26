@@ -13,7 +13,19 @@ and tolerant time parsing.
 dotnet add package budul.DateTimeExtensions
 ```
 
-Targets `netstandard2.0`, `netstandard2.1`, `net7.0` and `net8.0`.
+Targets `net10.0`.
+
+### Upgrading to 2.0
+
+* The package targets `net10.0` only, `netstandard2.0`, `netstandard2.1`, `net8.0` and `net9.0` are no longer supported. Stay on 1.x for those.
+* `GetDates(from, to, daysOfWeek)` returns dates without time of day. The last day is no longer lost if its time of day is earlier than the one of `from`.
+* `GetDates` and `GetPeriods` throw an `ArgumentException` for a `null` or empty separator.
+* `GetDates` from a string no longer returns duplicates for overlapping sections.
+* A single value with time of day in `GetPeriods` ends at the end of its own day instead of the following day.
+* `ToTimeSpan` only accepts inputs which are completely a time. Minutes and seconds must be below 60, and inputs like `2020-01-10` or `123456789` return `null`.
+* `ToTimeSpan` with delimiters never interprets the input as fraction of a day. Non-finite, negative and out of range numbers return `null` instead of throwing.
+* `MoveInPeriod` keeps the `DateTimeKind` of the input.
+* `ToTimeString` no longer doubles the sign for standard formats like `"c"`.
 
 ## Overview
 
@@ -55,7 +67,7 @@ foreach (var (from, to) in periods)
 
 Notes:
 
-* A single date or a range end without time of day covers the whole day.
+* A single date or a range end without time of day covers the whole day. A single value with time of day covers the rest of its own day. A range end at `00:00` is treated as a pure date and covers the whole day too.
 * Unparsable sections are skipped. A range with a start later than its end throws a `FormatException`.
 * `>` cannot be used as section separator (`ArgumentException`).
 * Parsing uses `DateTime.TryParse` with the current culture. ISO 8601 (`yyyy-MM-dd`) is recommended.
